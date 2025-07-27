@@ -1,4 +1,3 @@
-// app/dashboard/members/tabs/UserTab.tsx
 'use client';
 import { DataTable } from '@/components/shared/dataTable';
 import {useStoreAction} from "@/lib/store/useStoreAction";
