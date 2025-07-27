@@ -1,5 +1,7 @@
 import axiosInstance from "@/api/AxiosInstance";
 import {User,CommonResponse} from "@/lib/user/userType";
+import {UserUpdate} from "@/app/dashboard/members/schemas/schemas";
+
 const baseURL = '/api/users';
 
 const StoreService = {
@@ -10,6 +12,28 @@ const StoreService = {
         }
         return data
     },
+    add: async (payload: User): Promise<CommonResponse<string>> => {
+        const { data } = await axiosInstance.post(`${baseURL}/add`, payload);
+        if (data.statusCode !== 200 && data.statusCode !== 202) {
+            throw new Error(data.message);
+        }
+        return data;
+    },
+
+    update: async (nik: string, payload: UserUpdate): Promise<CommonResponse<string>> => {
+        const { data } = await axiosInstance.patch(`${baseURL}/update/${nik}`, payload);
+        if (data.statusCode !== 200 && data.statusCode !== 202) {
+            throw new Error(data.message);
+        }
+        return data;
+    },
+    resetPassword: async (nik: string): Promise<CommonResponse<string>> => {
+        const { data } = await axiosInstance.patch(`${baseURL}/reset-password/${nik}`);
+        if (data.statusCode !== 200 && data.statusCode !== 202) {
+            throw new Error(data.message);
+        }
+        return data;
+    }
 }
 
 

@@ -2,13 +2,13 @@
 
 import { Button } from '@/components/ui/button'
 import {Sheet, SheetClose, SheetContent, SheetDescription,SheetFooter, SheetHeader, SheetTitle,} from '@/components/ui/sheet'
-import { Store, storeSchema } from '../../data/schemas'
+import { Store, storeSchema } from '../../schemas/schemas'
 import { Formik, Form, Field, ErrorMessage, FieldProps } from 'formik'
-import { roleForm } from '../../data/roleForm'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select'
 import {useRegionAction,} from '@/lib/region/useRegionAction'
 import { useAddStore, useUpdateStore } from "@/lib/store/useStoreAction"
 import {Region} from "@/lib/region/regionType";
+import {validateForm} from "@/utils/validateForm";
 
 
 interface Props {
@@ -54,7 +54,7 @@ export default function StoreActionDrawer({ open, onOpenChange, currentRow }: Pr
 
                 <Formik
                     initialValues={initialValues}
-                    validate={roleForm(schema)}
+                    validate={validateForm(schema)}
                     onSubmit={(values, actions) => {
                         if (isUpdate) {
                             updateStore(

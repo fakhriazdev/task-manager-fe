@@ -8,10 +8,10 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet'
-import { Region, regionSchema } from '../../data/schemas'
+import { Region, regionSchema } from '../../schemas/schemas'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
-import { roleForm } from '../../data/roleForm'
 import {useAddRegion, useUpdateRegion} from "@/lib/region/useRegionAction";
+import {validateForm} from "@/utils/validateForm";
 
 
 interface Props {
@@ -46,7 +46,7 @@ export default function RegionActionDrawer({ open, onOpenChange, currentRow }: P
 
                 <Formik
                     initialValues={initialValues}
-                    validate={roleForm(schema)}
+                    validate={validateForm(schema)}
                     onSubmit={(values, actions) => {
                         if (isUpdate) {
                             updateRegion(

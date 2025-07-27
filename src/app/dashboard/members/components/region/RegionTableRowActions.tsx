@@ -8,7 +8,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {regionSchema} from "@/app/dashboard/members/data/schemas"
+import {regionSchema} from "@/app/dashboard/members/schemas/schemas"
 import { Row } from "@tanstack/table-core"
 import { MoreVertical } from "lucide-react"
 import {useRegionStore} from "@/lib/stores/useRegionStore";

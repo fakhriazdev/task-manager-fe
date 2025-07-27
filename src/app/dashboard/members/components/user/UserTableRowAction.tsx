@@ -8,7 +8,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { userSchema} from "@/app/dashboard/members/data/schemas"
+import { UserSchema} from "@/app/dashboard/members/schemas/schemas"
 import { Row } from "@tanstack/table-core"
 import { MoreVertical } from "lucide-react"
 import {useUserStore} from "@/lib/stores/useUserStore";
@@ -19,7 +19,7 @@ interface DataTableRowActionsProps<TData> {
 
 export default function DataTableRowAction<TData>({row,}: DataTableRowActionsProps<TData>) {
     const { setOpen, setCurrentRow } = useUserStore()
-    const parsed = userSchema.safeParse(row.original)
+    const parsed = UserSchema.safeParse(row.original)
     console.log(parsed)
     if (!parsed.success) return null
     const user = parsed.data
@@ -47,10 +47,10 @@ export default function DataTableRowAction<TData>({row,}: DataTableRowActionsPro
                 <DropdownMenuItem
                     onClick={() => {
                         setCurrentRow(user)
-                        setOpen("delete")
+                        setOpen("reset")
                     }}
                 >
-                    Delete
+                    Reset Password
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

@@ -1,7 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import * as React from "react";
-import { User } from "@/app/dashboard/members/data/schemas";
+import { User } from "@/app/dashboard/members/schemas/schemas";
 import DataTableRowAction from "@/app/dashboard/members/components/user/UserTableRowAction";
 import {AccessRegions, AccessStores} from "@/lib/user/userType";
 
@@ -58,7 +58,7 @@ export const userColumns: ColumnDef<User>[] = [
         accessorKey: "accessStores",
         header: "Access Stores",
         cell: ({ row }) => {
-            const stores = row.original.accessStores || [];
+            const stores = row.original.accessStoreIds || [];
             const role = row.original.roleId;
 
             return (
@@ -84,7 +84,7 @@ export const userColumns: ColumnDef<User>[] = [
         accessorKey: "accessRegions",
         header: "Access Regions",
         cell: ({ row }) => {
-            const regions = row.original.accessRegions || [];
+            const regions = row.original.accessRegionIds || [];
             const role = row.original.roleId;
 
             return (

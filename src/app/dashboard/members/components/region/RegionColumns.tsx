@@ -2,7 +2,7 @@ import {ColumnDef} from "@tanstack/react-table";
 import {Badge} from "@/components/ui/badge";
 import * as React from "react";
 
-import {Region} from "@/app/dashboard/members/data/schemas";
+import {Region} from "@/app/dashboard/members/schemas/schemas";
 import DataTableRowAction from "@/app/dashboard/members/components/region/RegionTableRowActions";
 
 

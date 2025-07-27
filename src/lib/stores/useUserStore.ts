@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { User } from "@/app/dashboard/members/data/schemas";
+import { User } from "@/app/dashboard/members/schemas/schemas";
 
-type UserDialogType = 'create' | 'update' | 'delete' | 'import';
+type UserDialogType = 'create' | 'update' | 'delete' | 'reset';
 
 interface UserState {
     open: UserDialogType | null;

@@ -7,8 +7,8 @@ export interface User {
     email: string;
     roleId: string;
     statusActive:boolean
-    accessStores:AccessStores[]
-    accessRegions:AccessRegions[]
+    accessStoreIds:AccessStores[]
+    accessRegionIds:AccessRegions[]
 }
 
 export interface AccessStores {
