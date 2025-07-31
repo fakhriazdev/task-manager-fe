@@ -5,7 +5,7 @@ import {ConfirmDialog} from "@/components/shared/confirmDialog";
 import {useResetPasswordUser} from "@/lib/user/useUserAction";
 export default function UserDialogs() {
     const { open, setOpen, currentRow,setCurrentRow } = useUserStore()
-    const {mutate:resetPassword,isPending} = useResetPasswordUser()
+    const {mutate:resetPassword} = useResetPasswordUser()
 
 
     return (
@@ -34,7 +34,7 @@ export default function UserDialogs() {
                         }}
                         handleConfirm={() => {
                             resetPassword({nik:currentRow?.nik})
-                            isPending && setOpen(null)
+                            setOpen(null)
                         }}
                         className='max-w-md'
                         title={`Reset Password for User: ${currentRow.nama} ?`}

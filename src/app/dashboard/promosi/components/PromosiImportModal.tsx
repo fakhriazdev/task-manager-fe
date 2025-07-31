@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileSpreadsheet, ChevronDown, Upload, AlertCircle } from "lucide-react";
+import { FileSpreadsheet, Upload, AlertCircle } from "lucide-react";
 
 interface User {
     id: string;

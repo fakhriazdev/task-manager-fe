@@ -33,10 +33,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     },
     validationSchema: schema,
     onSubmit: async () => {
-      try {
         await login.mutateAsync({ nik, password, callbackUrl: "/dashboard" });
-      } catch (err: any) {
-      }
     },
   });
 

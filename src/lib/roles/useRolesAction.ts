@@ -17,7 +17,7 @@ export function useUpdateRole(): UseMutationResult<CommonResponse<Roles[]>, Erro
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, data }) => {
-            return await RolesService.updateRoles(id, data);
+            return await RolesService.updateRole(id, data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'], refetchType: 'active' });
@@ -33,7 +33,7 @@ export function useAddRole(): UseMutationResult<CommonResponse<Roles[]>, Error, 
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ data }:{data:Roles}) => {
-            return await RolesService.addRoles(data);
+            return await RolesService.addRole(data);
         },
         onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['roles'], refetchType: 'active' });
@@ -45,20 +45,20 @@ export function useAddRole(): UseMutationResult<CommonResponse<Roles[]>, Error, 
     });
 }
 
-export function useDeleteRole(): UseMutationResult<CommonResponse<string>, Error, { id: string }> {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async ({ id }) => {
-            return await RolesService.deleteRole(id); // return type: CommonResponse<string>
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['roles'], refetchType: 'active' });
-            toast.success("Delete Role Successfully!");
-        },
-        onError: (error) => {
-            toast.error(`${error.message}`);
-        },
-    });
-}
+// export function useDeleteRole(): UseMutationResult<CommonResponse<string>, Error, { id: string }> {
+//     const queryClient = useQueryClient();
+//     return useMutation({
+//         mutationFn: async ({ id }) => {
+//             return await RolesService.deleteRole(id); // return type: CommonResponse<string>
+//         },
+//         onSuccess: () => {
+//             queryClient.invalidateQueries({ queryKey: ['roles'], refetchType: 'active' });
+//             toast.success("Delete Role Successfully!");
+//         },
+//         onError: (error) => {
+//             toast.error(`${error.message}`);
+//         },
+//     });
+// }
 
 

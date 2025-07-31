@@ -32,6 +32,7 @@ function isTokenExpired(token: string): boolean {
         const currentTime = Math.floor(Date.now() / 1000);
         return currentTime >= exp;
     } catch (error) {
+        console.error(error);
         return true;
     }
 }
