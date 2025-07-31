@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Region } from "@/app/dashboard/members/data/schemas";
+import { Region } from "@/app/dashboard/members/schemas/schemas";
 
 type RegionDialogType = 'create' | 'update' | 'delete' | 'import';
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Role } from "@/app/dashboard/members/data/schemas";
+import { Role } from "@/app/dashboard/members/schemas/schemas";
 
 type RolesDialogType = 'create' | 'update' | 'delete' | 'import';
 

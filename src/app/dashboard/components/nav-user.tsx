@@ -31,7 +31,7 @@ import { useAuthActions } from "@/lib/auth/useAuthAction";
 import {UserInfo} from "@/lib/auth/authTypes";
 import {Skeleton} from "@/components/ui/skeleton";
 import React from "react";
-export function NavUser({
+export default function NavUser({
   user,
 }: {
   user: UserInfo | null

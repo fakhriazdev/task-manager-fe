@@ -20,7 +20,6 @@ export function useAuthActions() {
         onSuccess: async (res) => {
             toast.dismiss();
             toast.success(res.message || "Login berhasil");
-
             const userRes = await AuthService.userInfo();
             setUser(userRes.data!);
             queryClient.setQueryData(['user-info'], userRes.data);

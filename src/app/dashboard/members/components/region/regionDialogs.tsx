@@ -12,7 +12,7 @@ export default function RegionDialogs() {
             />
             {currentRow && (<>
                     <RegionActionDrawer
-                        key={`task-update-${currentRow.code}`}
+                        key={`task-update-${currentRow.id}`}
                         open={open === 'update'}
                         onOpenChange={(isOpen) => setOpen(isOpen ? 'update' : null)}
                         currentRow={currentRow}
@@ -34,11 +34,11 @@ export default function RegionDialogs() {
                             }, 500)
                         }}
                         className='max-w-md'
-                        title={`Delete this Role: ${currentRow.code} ?`}
+                        title={`Delete this Role: ${currentRow.id} ?`}
                         desc={
                             <>
                                 You are about to delete a region with the Code{' '}
-                                <strong>{currentRow.code}</strong>. <br />
+                                <strong>{currentRow.id}</strong>. <br />
                                 This action cannot be undone.
                             </>
                         }

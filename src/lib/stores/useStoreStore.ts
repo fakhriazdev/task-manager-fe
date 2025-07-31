@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Store } from "@/app/dashboard/members/data/schemas";
+import { Store } from "@/app/dashboard/members/schemas/schemas";
 
 type StoreDialogType = 'create' | 'update' | 'delete' | 'import';
 
