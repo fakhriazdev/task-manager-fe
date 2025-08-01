@@ -2,7 +2,7 @@ import axiosInstance from "@/api/AxiosInstance";
 import {CommonResponse, LoginPayload, RegisterPayload, UserInfo} from "@/lib/auth/authTypes";
 
 
-const baseURL = '/api/auth/';
+const baseURL = `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/`;
 
 const AuthService = {
     login: async (user: LoginPayload):Promise<CommonResponse<string>> => {
