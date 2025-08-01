@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_BASE}/api/:path*`,
+        destination: 'https://task-manager-rose-gamma.vercel.app//api/:path*',
       },
     ];
   },
