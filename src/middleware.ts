@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
 export function middleware(request: NextRequest) {
     const token = request.cookies.get('access_token')?.value;
-
     const isAuth = Boolean(token && !isTokenExpired(token));
-    const isLoginPage = request.nextUrl.pathname === '/login';
+    const pathname = request.nextUrl.pathname;
 
-    if (!isAuth && !isLoginPage) {
+    const PUBLIC_PATHS = ['/login', '/register', '/api/auth/login', '/api/auth/register'];
+
+    const isPublicPath = PUBLIC_PATHS.includes(pathname);
+
+    if (!isAuth && !isPublicPath) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    if (isAuth && isLoginPage) {
+    if (isAuth && pathname === '/login') {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
@@ -18,9 +22,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: [
-        '/((?!_next|api|static|favicon.ico).*)',
-    ],
+    matcher: ['/((?!_next|static|favicon.ico).*)'],
 };
 
 function isTokenExpired(token: string): boolean {
