@@ -38,10 +38,13 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
+import {formatIDR, unformatToDigits} from "@/utils/currency";
 
 export default function TicketForm() {
     const addTicket = useAddTicket();
     const isLoading = addTicket.isPending;
+    const getPaymentLabel = (code?: PaymentCode | "") =>
+        PAYMENT_OPTIONS.find(o => o.value === code)?.label ?? (code || "-");
 
     const {
         selectedImages,
@@ -340,38 +343,26 @@ export default function TicketForm() {
                                                     </Field>
                                                 </div>
 
-                                                {/* Grand Total */}
                                                 <div className="space-y-2">
                                                     <Label>Grand Total *</Label>
                                                     <Field name="grandTotal">
                                                         {({ field, meta, form }: FieldProps<string | null, TicketForm>) => {
-                                                            const rawValue = field.value ?? '';
-
-                                                            // format angka -> Rp + comma
-                                                            const formatCurrency = (val: string) => {
-                                                                if (!val) return 'Rp ';
-                                                                const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
-                                                                if (isNaN(num)) return 'Rp ';
-                                                                return `Rp ${num.toLocaleString('id-ID')}`;
-                                                            };
-
-                                                            // unformat -> hanya angka string
-                                                            const unformatCurrency = (val: string) => {
-                                                                return val.replace(/[^0-9]/g, '');
-                                                            };
+                                                            const rawValue = field.value ?? "";
 
                                                             const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                                const onlyDigits = unformatCurrency(e.target.value);
-                                                                form.setFieldValue('grandTotal', onlyDigits, true);
+                                                                const onlyDigits = unformatToDigits(e.target.value);
+                                                                form.setFieldValue("grandTotal", onlyDigits, true);
                                                             };
 
                                                             return (
                                                                 <>
                                                                     <Input
                                                                         {...field}
-                                                                        value={formatCurrency(rawValue)}
+                                                                        value={formatIDR(rawValue)}
                                                                         placeholder="Enter grand total"
                                                                         onChange={handleChange}
+                                                                        inputMode="numeric"
+                                                                        pattern="[0-9]*"
                                                                     />
                                                                     {meta.touched && meta.error && (
                                                                         <p className="text-sm text-destructive">{meta.error}</p>
@@ -506,21 +497,46 @@ export default function TicketForm() {
 
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Submit this ticket?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Please double-check your form.
-                                                    You can cancel to review or continue to submit.
+                                                <AlertDialogTitle>Kirim tiket ini ?</AlertDialogTitle>
+                                                <AlertDialogDescription className="text-base leading-relaxed">
+                                                    {values.category === "Transaksi" ? (
+                                                        <>
+                                                            <p className="mb-2">Apakah Anda yakin ingin mengubah metode pembayaran?</p>
+
+                                                            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                                                                <dt className="text-muted-foreground">Kode Tagihan</dt>
+                                                                <dd className="font-semibold text-primary">{values.billCode}</dd>
+
+                                                                <dt className="text-muted-foreground">Total</dt>
+                                                                <dd className="font-semibold text-primary">{formatIDR(values.grandTotal)}</dd>
+
+                                                                <dt className="text-muted-foreground">Dari</dt>
+                                                                <dd className="font-semibold text-primary ">{getPaymentLabel(values.fromPayment)}</dd>
+
+                                                                <dt className="text-muted-foreground">Ke</dt>
+                                                                <dd className="font-semibold text-primary">{getPaymentLabel(values.toPayment)}</dd>
+
+                                                                <dt className="text-muted-foreground">Direct Selling</dt>
+                                                                <dd className="font-semibold text-primary">{values.isDirectSelling ? "Ya" : "Tidak"}</dd>
+                                                            </dl>
+
+                                                            <p className="mt-3 text-muted-foreground">
+                                                                Silakan periksa kembali. Anda dapat membatalkan untuk mengoreksi, atau lanjutkan untuk mengirim.
+                                                            </p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Apakah Anda yakin ingin mengirim tiket ini? Mohon periksa kembali formulir Anda. Anda dapat membatalkan untuk meninjau atau melanjutkan untuk mengirim.
+                                                        </>
+                                                    )}
                                                 </AlertDialogDescription>
+
                                             </AlertDialogHeader>
 
                                             <AlertDialogFooter>
-                                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    // jalankan submit formik ketika dikonfirmasi
-                                                    onClick={formik.submitForm}
-                                                    disabled={isLoading}
-                                                >
-                                                    Ya, kirim
+                                                <AlertDialogCancel>Kembali</AlertDialogCancel>
+                                                <AlertDialogAction onClick={formik.submitForm} disabled={isLoading}>
+                                                    Ya, Kirim
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
