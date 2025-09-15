@@ -103,7 +103,7 @@ export default function TicketForm() {
 
                             };
 
-                            await addTicket.mutateAsync({payload, callbackUrl: "https://web.amscorp.id:3060/"});
+                            await addTicket.mutateAsync({payload, callbackUrl: "https://web.amscorp.id:3060/module/support/TicketList.aspx"});
                             setUploadError('');
                         }}
                     >
