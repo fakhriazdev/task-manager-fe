@@ -1,7 +1,6 @@
 'use client'
 
-import { DataTable } from "@/app/dashboard/ticket/components/data-table"
-import data from "./data.json"
+import TicketTable from "@/app/dashboard/ticket/components/TicketTable";
 
 export default function TicketPage() {
 
@@ -9,7 +8,7 @@ export default function TicketPage() {
         <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                    <DataTable data={data} />
+                    <TicketTable />
                 </div>
             </div>
         </div>

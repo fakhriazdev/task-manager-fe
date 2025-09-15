@@ -17,6 +17,17 @@ export function useUserAction(): UseQueryResult<User[], Error> {
     });
 }
 
+export function useSuperAction(): UseQueryResult<User[], Error> {
+    return useQuery({
+        queryKey: ['super'],
+        queryFn: async () => {
+            const response: CommonResponse<User[]> = await UserService.getSuper();
+            return response.data ?? [];
+        },
+    });
+}
+
+
 export function useAddUser(): UseMutationResult<CommonResponse<string>, Error, User> {
     const queryClient = useQueryClient();
 

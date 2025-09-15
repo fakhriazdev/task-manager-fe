@@ -4,6 +4,18 @@ import RegionService from "@/lib/region/regionService";
 import {toast} from "sonner";
 import {CommonResponse} from "@/lib/store/storeTypes";
 
+type ApiErrorResponse = {
+    statusCode: number;
+    message: string;
+    error?: string;
+};
+
+interface ApiError extends Error {
+    response?: {
+        data?: ApiErrorResponse;
+    };
+}
+
 
 export function useRegionAction(): UseQueryResult<Region[], Error> {
     return useQuery({
@@ -43,6 +55,30 @@ export function useUpdateRegion(): UseMutationResult<CommonResponse<Region[]>, E
         },
         onError: (error) => {
             toast.error(`${error.message}`);
+        },
+    });
+}
+
+export function useDeleteRegion(): UseMutationResult<
+    CommonResponse<Region>,
+    ApiError,
+    { id: string }
+> {
+    const queryClient = useQueryClient();
+
+    return useMutation<CommonResponse<Region>, ApiError, { id: string }>({
+        mutationFn: async ({ id }) => {
+            return await RegionService.deleteRegion(id);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["region"] });
+            toast.success("Delete Region Successfully!");
+        },
+        onError: (error) => {
+            // Sekarang bisa akses response dengan aman
+            const message =
+                error.response?.data?.message ?? error.message ?? "Failed to delete region";
+            toast.error(message);
         },
     });
 }

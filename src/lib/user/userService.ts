@@ -12,9 +12,19 @@ const StoreService = {
         }
         return data
     },
+
+    getSuper: async (): Promise<CommonResponse<User[]>> => {
+        const {data} = await axiosInstance.get(`${baseURL}/super`);
+        if (data.statusCode !== 202 && data.statusCode !== 200) {
+            throw new Error(data.message);
+        }
+        return data
+    },
+
     add: async (payload: User): Promise<CommonResponse<string>> => {
         const { data } = await axiosInstance.post(`${baseURL}/add`, payload);
-        if (data.statusCode !== 200 && data.statusCode !== 202) {
+        console.log(data)
+        if (data.statusCode !== 200 && data.statusCode !== 201) {
             throw new Error(data.message);
         }
         return data;

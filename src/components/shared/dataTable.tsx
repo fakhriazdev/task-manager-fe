@@ -8,8 +8,10 @@ import {
     IconChevronsLeft,
     IconChevronsRight,
     IconLayoutColumns,
+    IconSearch,
 } from "@tabler/icons-react"
 import {
+    Column,
     ColumnDef,
     ColumnFiltersState,
     flexRender,
@@ -19,6 +21,7 @@ import {
     getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
+    HeaderContext,
     SortingState,
     useReactTable,
     VisibilityState,
@@ -28,6 +31,7 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
@@ -46,6 +50,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
 
 interface DataTableProps<TData> {
     data: TData[]
@@ -54,9 +59,52 @@ interface DataTableProps<TData> {
     defaultColumnVisibility?: VisibilityState
 }
 
-export function DataTable<TData>({data, columns, getRowId = (_, index) => index.toString(), defaultColumnVisibility = {},}: DataTableProps<TData>) {
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultColumnVisibility)
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+// 🔧 helper ambil label header
+export function getHeaderLabel<TData>(
+    col: Column<TData, unknown> | undefined
+): string {
+    if (!col) return ""
+
+    const header = col.columnDef.header
+
+    if (typeof header === "string") return header
+
+    if (typeof header === "function") {
+        try {
+            const ctx = { column: col } as HeaderContext<TData, unknown>
+            const rendered = header(ctx)
+
+            if (typeof rendered === "string") return rendered
+
+            if (
+                React.isValidElement<{ children?: React.ReactNode }>(rendered) &&
+                rendered.props
+            ) {
+                const { children } = rendered.props
+                if (typeof children === "string") return children
+                if (Array.isArray(children)) {
+                    return children.filter((c) => typeof c === "string").join(" ")
+                }
+            }
+        } catch {
+            return col.id
+        }
+    }
+
+    return col.id
+}
+
+export function DataTable<TData>({
+                                     data,
+                                     columns,
+                                     getRowId = (_, index) => index.toString(),
+                                     defaultColumnVisibility = {},
+                                 }: DataTableProps<TData>) {
+    const [columnVisibility, setColumnVisibility] =
+        React.useState<VisibilityState>(defaultColumnVisibility)
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+        []
+    )
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [pagination, setPagination] = React.useState({
         pageIndex: 0,
@@ -85,10 +133,81 @@ export function DataTable<TData>({data, columns, getRowId = (_, index) => index.
         getFacetedUniqueValues: getFacetedUniqueValues(),
     })
 
+    // cari kolom filterable
+    const filterableColumns = table
+        .getAllColumns()
+        .filter((col) => col.columnDef.enableColumnFilter)
+
+    // ⏩ langsung set default kolom pertama
+    const [searchColumn, setSearchColumn] = React.useState<string | null>(
+        filterableColumns.length > 0 ? filterableColumns[0].id : null
+    )
+
     return (
         <div className="w-full flex flex-col gap-6">
-            {/* Column Visibility Toggle */}
-            <div className="flex items-center justify-between px-4 lg:px-6">
+            {/* Toolbar: Search & Column Visibility */}
+            <div className="flex items-center justify-between px-4 lg:px-6 gap-4">
+                {filterableColumns.length > 0 && (
+                    <div className="flex gap-2 w-full max-w-md">
+                        {/* 🔎 Search */}
+                        <div className="relative flex-1">
+                            <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder={`Search by ${getHeaderLabel(
+                                    filterableColumns.find((c) => c.id === searchColumn) ??
+                                    filterableColumns[0]
+                                )}`}
+                                className="pl-8"
+                                value={
+                                    searchColumn
+                                        ? ((table.getColumn(searchColumn)?.getFilterValue() as string) ??
+                                            "")
+                                        : ""
+                                }
+                                onChange={(e) => {
+                                    if (searchColumn) {
+                                        table
+                                            .getColumn(searchColumn)
+                                            ?.setFilterValue(e.target.value)
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        {/* pilih kolom filter */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    {getHeaderLabel(
+                                        filterableColumns.find((c) => c.id === searchColumn) ??
+                                        filterableColumns[0]
+                                    )}
+                                    <IconChevronDown className="ml-1 h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {filterableColumns.map((col) => {
+                                    const headerLabel = getHeaderLabel(col)
+                                    return (
+                                        <DropdownMenuItem
+                                            key={col.id}
+                                            onClick={() => {
+                                                filterableColumns.forEach((c) =>
+                                                    table.getColumn(c.id)?.setFilterValue("")
+                                                )
+                                                setSearchColumn(col.id)
+                                            }}
+                                        >
+                                            {headerLabel}
+                                        </DropdownMenuItem>
+                                    )
+                                })}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )}
+
+                {/* Customize Columns */}
                 <div className="flex items-center gap-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -112,7 +231,7 @@ export function DataTable<TData>({data, columns, getRowId = (_, index) => index.
                                             column.toggleVisibility(!!value)
                                         }
                                     >
-                                        {column.id}
+                                        {getHeaderLabel(column)}
                                     </DropdownMenuCheckboxItem>
                                 ))}
                         </DropdownMenuContent>
@@ -183,7 +302,9 @@ export function DataTable<TData>({data, columns, getRowId = (_, index) => index.
                                 }}
                             >
                                 <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                                    <SelectValue placeholder={`${table.getState().pagination.pageSize}`} />
+                                    <SelectValue
+                                        placeholder={`${table.getState().pagination.pageSize}`}
+                                    />
                                 </SelectTrigger>
                                 <SelectContent side="top">
                                     {[10, 15, 20, 25, 30].map((pageSize) => (
@@ -195,7 +316,8 @@ export function DataTable<TData>({data, columns, getRowId = (_, index) => index.
                             </Select>
                         </div>
                         <div className="flex w-fit items-center justify-center text-sm font-medium">
-                            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                            Page {table.getState().pagination.pageIndex + 1} of{" "}
+                            {table.getPageCount()}
                         </div>
                         <div className="ml-auto flex items-center gap-2 lg:ml-0">
                             <Button

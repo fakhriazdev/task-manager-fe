@@ -5,26 +5,30 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('access_token')?.value;
     const isAuth = Boolean(token && !isTokenExpired(token));
 
-    // 💡 Hapus trailing slash agar path jadi konsisten (misal /login dan /login/ dianggap sama)
+    // Hapus trailing slash agar konsisten (/login dan /login/ dianggap sama)
     const pathname = request.nextUrl.pathname.replace(/\/$/, '');
 
-    const PUBLIC_PATHS = [
-        '/login',
-        '/register',
-        '/api/auth/login',
-        '/api/auth/register',
+    const PUBLIC_PATHS: RegExp[] = [
+        /^\/login$/,
+        /^\/register$/,
+        /^\/shared\/.*/,
+        /^\/api\/auth\/login$/,
+        /^\/api\/auth\/register$/,
+        /^\/api\/tickets$/,
     ];
 
-    const isPublicPath = PUBLIC_PATHS.includes(pathname);
+    function isPublicPath(path: string) {
+        return PUBLIC_PATHS.some(regex => regex.test(path));
+    }
 
     // 🔁 Redirect ke /login jika belum login dan akses bukan halaman publik
-    if (!isAuth && !isPublicPath) {
-        return NextResponse.redirect(new URL('/login/', request.url));
+    if (!isAuth && !isPublicPath(pathname)) {
+        return NextResponse.redirect(new URL('/login', request.url));
     }
 
     // 🔁 Jika sudah login, tapi malah ke /login → arahkan ke dashboard
     if (isAuth && pathname === '/login') {
-        return NextResponse.redirect(new URL('/dashboard/', request.url));
+        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     return NextResponse.next();

@@ -29,6 +29,11 @@ const RegionService = {
         return data
     },
 
+    deleteRegion: async (id: string): Promise<CommonResponse<Region>> => {
+        const { data } = await axiosInstance.delete(`${baseURL}/remove/${id}`);
+        return data;
+    },
+
 
 };
 
