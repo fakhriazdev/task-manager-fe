@@ -63,10 +63,10 @@ export default function TicketForm() {
             <Card className="w-full max-w-2xl shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-2xl">
-                        <FileImage className="w-6 h-6 text-primary" /> Create New Report
+                        <FileImage className="w-6 h-6 text-primary" /> Create New Ticket
                     </CardTitle>
                     <CardDescription>
-                        Fill in the details below to create a new report
+                        Fill in the details below to create a new ticket
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
