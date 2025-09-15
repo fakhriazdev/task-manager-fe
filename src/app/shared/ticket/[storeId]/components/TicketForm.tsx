@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileImage, Upload, X } from 'lucide-react';
 import Image from 'next/image';
-
+import { useParams } from 'next/navigation';
 import { useAddTicket } from '@/lib/ticket/useTicketAction';
 import {
     CATEGORY_OPTIONS,
@@ -27,7 +27,7 @@ import {
     type PaymentCode,
     type TicketForm,
 } from '@/lib/ticket/TicketTypes';
-import { validationSchema, FILE_RULES } from '@/app/shared/ticket/schemas/form';
+import { validationSchema, FILE_RULES } from '@/app/shared/ticket/[storeId]/schemas/form';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import {Select, SelectContent, SelectLabel, SelectTrigger, SelectValue ,SelectGroup, SelectItem} from "@/components/ui/select";
 import {
@@ -45,7 +45,11 @@ export default function TicketForm() {
     const isLoading = addTicket.isPending;
     const getPaymentLabel = (code?: PaymentCode | "") =>
         PAYMENT_OPTIONS.find(o => o.value === code)?.label ?? (code || "-");
-
+    const params = useParams<{ storeId?: string }>();
+    // const router = useRouter();
+    const storeIdFromRoute = Array.isArray(params?.storeId)
+        ? params?.storeId?.[0] ?? ''
+        : params?.storeId ?? '';
     const {
         selectedImages,
         previews,
@@ -58,7 +62,7 @@ export default function TicketForm() {
     } = useImageUpload();
 
     const initialValues: TicketForm = {
-        idStore: '',
+        idStore: storeIdFromRoute?.toUpperCase() ?? '',
         noTelp:'',
         category: 'Transaksi',
         description: '',
@@ -117,6 +121,7 @@ export default function TicketForm() {
                                                         <Input
                                                             {...field}
                                                             value={field.value.toUpperCase() ?? ''}
+                                                            disabled={values.idStore !== null}
                                                             placeholder="Enter store ID"
                                                             maxLength={6}
                                                         />

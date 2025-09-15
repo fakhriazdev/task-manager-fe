@@ -1,7 +1,7 @@
 'use client';
 
 
-import TicketForm from "./components/TicketForm";
+import TicketForm from "@/app/shared/ticket/[storeId]/components/TicketForm";
 export default function PageReport() {
 
     return (

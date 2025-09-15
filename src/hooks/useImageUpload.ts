@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback,useRef } from "react";
 import { FormikHelpers } from "formik";
 import { TicketForm } from "@/lib/ticket/TicketTypes";
-import { FILE_RULES, bytes, isAcceptedMime } from "@/app/shared/ticket/schemas/form";
+import { FILE_RULES, bytes, isAcceptedMime } from "@/app/shared/ticket/[storeId]/schemas/form";
 
 export function useImageUpload() {
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
