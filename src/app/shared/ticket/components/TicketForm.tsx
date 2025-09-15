@@ -29,6 +29,7 @@ import {
 } from '@/lib/ticket/TicketTypes';
 import { validationSchema, FILE_RULES } from '@/app/shared/ticket/schemas/form';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import {Select, SelectContent, SelectLabel, SelectTrigger, SelectValue ,SelectGroup, SelectItem} from "@/components/ui/select";
 
 export default function TicketForm() {
     const addTicket = useAddTicket();
@@ -139,60 +140,65 @@ export default function TicketForm() {
                                             </Field>
                                         </div>
                                     </div>
+                                    {/* Category */}
                                     <div className="space-y-2">
                                         <Label>Category *</Label>
                                         <Field name="category">
-                                            {({ meta }: { meta: FieldMetaProps<TicketForm['category']> }) => (
+                                            {({ meta }: { meta: FieldMetaProps<TicketForm["category"]> }) => (
                                                 <>
-                                                    <select
-                                                        value={values.category}
-                                                        onChange={(e) => {
-                                                            const next = e.target.value as CategoryCode;
-                                                            setFieldValue('category', next, true);
+                                                    <Select
+                                                        value={values.category || ""}
+                                                        onValueChange={(next: string) => {
+                                                            const nextCat = next as CategoryCode
+                                                            setFieldValue("category", nextCat, true)
 
-                                                            // setiap ganti kategori, reset semua field + images
+                                                            // reset semua field + images setiap ganti kategori
                                                             formik.setValues(
                                                                 {
-                                                                    idStore: '',
-                                                                    noTelp: '',
-                                                                    category: next,
-                                                                    description: '',
-                                                                    fromPayment: '',
-                                                                    toPayment: '',
+                                                                    idStore: "",
+                                                                    noTelp: "",
+                                                                    category: nextCat,
+                                                                    description: "",
+                                                                    fromPayment: "",
+                                                                    toPayment: "",
                                                                     isDirectSelling: false,
-                                                                    billCode: '',
-                                                                    grandTotal: '',
+                                                                    billCode: "",
+                                                                    grandTotal: "",
                                                                     images: new DataTransfer().files,
-                                                                }, false
-                                                            );
-                                                            handleReset(setFieldValue);
+                                                                },
+                                                                false
+                                                            )
+                                                            handleReset(setFieldValue)
                                                         }}
-
-                                                        className={cn(
-                                                            'w-full border rounded px-2 py-2',
-                                                            meta.touched &&
-                                                            meta.error &&
-                                                            'border-destructive'
-                                                        )}
                                                     >
-                                                        <option value="" disabled>
-                                                            Select category
-                                                        </option>
-                                                        {CATEGORY_OPTIONS.map((opt) => (
-                                                            <option key={opt.value} value={opt.value}>
-                                                                {opt.label}
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                        <SelectTrigger
+                                                            className={cn(
+                                                                "w-full",
+                                                                meta.touched && meta.error && "border-destructive"
+                                                            )}
+                                                        >
+                                                            <SelectValue placeholder="Select category" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                <SelectLabel>Categories</SelectLabel>
+                                                                {CATEGORY_OPTIONS.map((opt) => (
+                                                                    <SelectItem key={opt.value} value={opt.value}>
+                                                                        {opt.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+
                                                     {meta.touched && meta.error && (
-                                                        <p className="text-sm text-destructive">
-                                                            {meta.error}
-                                                        </p>
+                                                        <p className="text-sm text-destructive">{meta.error}</p>
                                                     )}
                                                 </>
                                             )}
                                         </Field>
                                     </div>
+
 
                                     {/* Description */}
                                     <div className="space-y-2">
@@ -223,91 +229,83 @@ export default function TicketForm() {
                                                 <div className="space-y-2">
                                                     <Label>From Payment *</Label>
                                                     <Field name="fromPayment">
-                                                        {({
-                                                              meta,
-                                                          }: {
-                                                            meta: FieldMetaProps<TicketForm['fromPayment']>;
-                                                        }) => (
+                                                        {({ meta }: { meta: FieldMetaProps<TicketForm["fromPayment"]> }) => (
                                                             <>
-                                                                <select
-                                                                    value={values.fromPayment ?? ''}
-                                                                    onChange={(e) =>
-                                                                        setFieldValue(
-                                                                            'fromPayment',
-                                                                            e.target.value as PaymentCode,
-                                                                            true
-                                                                        )
-                                                                    }
-                                                                    className={cn(
-                                                                        'w-full border rounded px-2 py-2',
-                                                                        meta.touched &&
-                                                                        meta.error &&
-                                                                        'border-destructive'
-                                                                    )}
+                                                                <Select
+                                                                    value={values.fromPayment || ""}
+                                                                    onValueChange={(next: string) => {
+                                                                        setFieldValue("fromPayment", next as PaymentCode, true);
+                                                                    }}
                                                                 >
-                                                                    <option value="" disabled>
-                                                                        Select from payment
-                                                                    </option>
-                                                                    {PAYMENT_OPTIONS.map((opt) => (
-                                                                        <option key={opt.value} value={opt.value}>
-                                                                            {opt.label}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
+                                                                    <SelectTrigger
+                                                                        className={cn(
+                                                                            "w-full",
+                                                                            meta.touched && meta.error && "border-destructive"
+                                                                        )}
+                                                                    >
+                                                                        <SelectValue placeholder="Select from payment" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectGroup>
+                                                                            <SelectLabel>Payments</SelectLabel>
+                                                                            {PAYMENT_OPTIONS.map((opt) => (
+                                                                                <SelectItem key={opt.value} value={opt.value}>
+                                                                                    {opt.label}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                        </SelectGroup>
+                                                                    </SelectContent>
+                                                                </Select>
+
                                                                 {meta.touched && meta.error && (
-                                                                    <p className="text-sm text-destructive">
-                                                                        {meta.error}
-                                                                    </p>
+                                                                    <p className="text-sm text-destructive">{meta.error}</p>
                                                                 )}
                                                             </>
                                                         )}
                                                     </Field>
                                                 </div>
 
+
                                                 {/* To Payment */}
                                                 <div className="space-y-2">
                                                     <Label>To Payment *</Label>
                                                     <Field name="toPayment">
-                                                        {({
-                                                              meta,
-                                                          }: {
-                                                            meta: FieldMetaProps<TicketForm['toPayment']>;
-                                                        }) => (
+                                                        {({ meta }: { meta: FieldMetaProps<TicketForm["toPayment"]> }) => (
                                                             <>
-                                                                <select
-                                                                    value={values.toPayment ?? ''}
-                                                                    onChange={(e) =>
-                                                                        setFieldValue(
-                                                                            'toPayment',
-                                                                            e.target.value as PaymentCode,
-                                                                            true
-                                                                        )
-                                                                    }
-                                                                    className={cn(
-                                                                        'w-full border rounded px-2 py-2',
-                                                                        meta.touched &&
-                                                                        meta.error &&
-                                                                        'border-destructive'
-                                                                    )}
+                                                                <Select
+                                                                    value={values.toPayment || ""}
+                                                                    onValueChange={(next: string) => {
+                                                                        setFieldValue("toPayment", next as PaymentCode, true);
+                                                                    }}
                                                                 >
-                                                                    <option value="" disabled>
-                                                                        Select to payment
-                                                                    </option>
-                                                                    {PAYMENT_OPTIONS.map((opt) => (
-                                                                        <option key={opt.value} value={opt.value}>
-                                                                            {opt.label}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
+                                                                    <SelectTrigger
+                                                                        className={cn(
+                                                                            "w-full",
+                                                                            meta.touched && meta.error && "border-destructive"
+                                                                        )}
+                                                                    >
+                                                                        <SelectValue placeholder="Select to payment" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectGroup>
+                                                                            <SelectLabel>Payments</SelectLabel>
+                                                                            {PAYMENT_OPTIONS.map((opt) => (
+                                                                                <SelectItem key={opt.value} value={opt.value}>
+                                                                                    {opt.label}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                        </SelectGroup>
+                                                                    </SelectContent>
+                                                                </Select>
+
                                                                 {meta.touched && meta.error && (
-                                                                    <p className="text-sm text-destructive">
-                                                                        {meta.error}
-                                                                    </p>
+                                                                    <p className="text-sm text-destructive">{meta.error}</p>
                                                                 )}
                                                             </>
                                                         )}
                                                     </Field>
                                                 </div>
+
 
                                                 {/* Billcode */}
                                                 <div className="space-y-2">
