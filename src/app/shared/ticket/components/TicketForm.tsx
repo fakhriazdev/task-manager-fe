@@ -30,6 +30,14 @@ import {
 import { validationSchema, FILE_RULES } from '@/app/shared/ticket/schemas/form';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import {Select, SelectContent, SelectLabel, SelectTrigger, SelectValue ,SelectGroup, SelectItem} from "@/components/ui/select";
+import {
+    AlertDialog,
+    AlertDialogAction, AlertDialogCancel,
+    AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 
 export default function TicketForm() {
     const addTicket = useAddTicket();
@@ -485,13 +493,39 @@ export default function TicketForm() {
                                     </div>
 
                                     {/* Submit */}
-                                    <Button
-                                        type="submit"
-                                        disabled={isLoading || !isValid || !dirty}
-                                        className="w-full"
-                                    >
-                                        {isLoading ? 'Creating Ticket...' : 'Create Ticket'}
-                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                disabled={isLoading || !isValid || !dirty}
+                                                className="w-full"
+                                            >
+                                                {isLoading ? "Creating Ticket..." : "Create Ticket"}
+                                            </Button>
+                                        </AlertDialogTrigger>
+
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Submit this ticket?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Please double-check your form.
+                                                    You can cancel to review or continue to submit.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    // jalankan submit formik ketika dikonfirmasi
+                                                    onClick={formik.submitForm}
+                                                    disabled={isLoading}
+                                                >
+                                                    Ya, kirim
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+
                                 </Form>
                             );
                         }}
