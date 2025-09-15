@@ -50,6 +50,9 @@ export default function TicketForm() {
     const storeIdFromRoute = Array.isArray(params?.storeId)
         ? params?.storeId?.[0] ?? ''
         : params?.storeId ?? '';
+
+    const safeStoreId = (storeIdFromRoute || '').toUpperCase();
+
     const {
         selectedImages,
         previews,
@@ -62,7 +65,7 @@ export default function TicketForm() {
     } = useImageUpload();
 
     const initialValues: TicketForm = {
-        idStore: storeIdFromRoute?.toUpperCase() ?? '',
+        idStore: safeStoreId,
         noTelp:'',
         category: 'Transaksi',
         description: '',
@@ -87,6 +90,7 @@ export default function TicketForm() {
                 </CardHeader>
                 <CardContent>
                     <Formik<TicketForm>
+                        enableReinitialize
                         initialValues={initialValues}
                         validationSchema={validationSchema}
                         onSubmit={async (values:TicketForm) => {
@@ -99,6 +103,7 @@ export default function TicketForm() {
 
                             const payload: TicketForm = {
                                 ...values,
+                                idStore: safeStoreId || values.idStore,
                                 images: dt.files,
 
                             };
@@ -109,6 +114,7 @@ export default function TicketForm() {
                     >
                         {(formik) => {
                             const { values, setFieldValue, isValid, dirty } = formik;
+                            console.log(values,'values')
                             const isTransaksi = values.category === 'Transaksi';
                             return (
                                 <Form className="space-y-6">
@@ -120,8 +126,8 @@ export default function TicketForm() {
                                                     <>
                                                         <Input
                                                             {...field}
-                                                            value={field.value.toUpperCase() ?? ''}
-                                                            disabled={values.idStore !== null}
+                                                            value={(field.value || safeStoreId).toUpperCase()}
+                                                            readOnly
                                                             placeholder="Enter store ID"
                                                             maxLength={6}
                                                         />
@@ -166,12 +172,14 @@ export default function TicketForm() {
                                                         value={values.category || ""}
                                                         onValueChange={(next: string) => {
                                                             const nextCat = next as CategoryCode
+                                                            const fixedIdStore = (values.idStore && values.idStore.trim()) ? values.idStore.toUpperCase() : safeStoreId;
                                                             setFieldValue("category", nextCat, true)
 
                                                             // reset semua field + images setiap ganti kategori
                                                             formik.setValues(
                                                                 {
-                                                                    idStore: "",
+                                                                    ...values,
+                                                                    idStore: fixedIdStore,
                                                                     noTelp: "",
                                                                     category: nextCat,
                                                                     description: "",
