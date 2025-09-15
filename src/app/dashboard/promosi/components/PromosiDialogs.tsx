@@ -1,16 +1,16 @@
 'use client'
-import {usePromosiStore} from "@/lib/stores/usePromosiStore";
-import PromosiImportModal from "@/app/dashboard/promosi/components/PromosiImportModal";
+// import {usePromosiStore} from "@/lib/stores/usePromosiStore";
+// import PromosiImportModal from "@/app/dashboard/promosi/components/PromosiImportModal";
 export default function PromosiDialogs() {
-    const { open, setOpen } = usePromosiStore()
+    // const { open, setOpen } = usePromosiStore()
     return (
         <>
 
-            <PromosiImportModal
-                key='tasks-import'
-                open={open === 'import'}
-                onOpenChange={(val) => setOpen(val ? 'import' : null)}
-            />
+            {/*<PromosiImportModal*/}
+            {/*    key='tasks-import'*/}
+            {/*    open={open === 'import'}*/}
+            {/*    onOpenChange={(val) => setOpen(val ? 'import' : null)}*/}
+            {/*/>*/}
             {/*{currentRow && (<>*/}
             {/*        <RegionActionDrawer*/}
             {/*            key={`task-update-${currentRow.code}`}*/}
