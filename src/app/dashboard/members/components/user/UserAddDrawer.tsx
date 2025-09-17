@@ -10,7 +10,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
-import {Region, Role, Store, User, UserSchema} from '@/app/dashboard/members/schemas/schemas';
+import {createUserSchema, Region, Role, Store, User, UserSchema} from '@/app/dashboard/members/schemas/schemas';
 import { Formik, Form, Field, ErrorMessage, FieldProps } from 'formik';
 import { useRolesAction } from '@/lib/roles/useRolesAction';
 import { useStoreAction } from '@/lib/store/useStoreAction';
@@ -20,6 +20,7 @@ import { applyRoleBasedAccessRules, validateForm } from '@/utils/validateForm';
 import { useAddUser } from '@/lib/user/useUserAction';
 import { MultiSelect } from '@/components/MultiSelect';
 import {Badge} from '@/components/ui/badge';
+import {NewUser} from "@/lib/user/userType";
 
 interface Props {
     open: boolean;
@@ -37,7 +38,7 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
         fieldStores: false,
     });
 
-    const initialValues: User = {
+    const initialValues: NewUser = {
         nik: '',
         nama: '',
         noTelp: '',
@@ -82,7 +83,7 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
                 <Formik
                     initialValues={initialValues}
                     enableReinitialize
-                    validate={validateForm(applyRoleBasedAccessRules(UserSchema))}
+                    validate={validateForm(applyRoleBasedAccessRules(createUserSchema))}
                     onSubmit={(values, actions) => {
                         addUser(values, {
                             onSuccess: () => {

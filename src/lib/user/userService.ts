@@ -1,5 +1,5 @@
 import axiosInstance from "@/api/AxiosInstance";
-import {User,CommonResponse} from "@/lib/user/userType";
+import {User, CommonResponse, NewUser} from "@/lib/user/userType";
 import {UserUpdate} from "@/app/dashboard/members/schemas/schemas";
 
 const baseURL = '/api/users';
@@ -13,15 +13,7 @@ const StoreService = {
         return data
     },
 
-    getSuper: async (): Promise<CommonResponse<User[]>> => {
-        const {data} = await axiosInstance.get(`${baseURL}/super`);
-        if (data.statusCode !== 202 && data.statusCode !== 200) {
-            throw new Error(data.message);
-        }
-        return data
-    },
-
-    add: async (payload: User): Promise<CommonResponse<string>> => {
+    add: async (payload: NewUser): Promise<CommonResponse<string>> => {
         const { data } = await axiosInstance.post(`${baseURL}/add`, payload);
         console.log(data)
         if (data.statusCode !== 200 && data.statusCode !== 201) {

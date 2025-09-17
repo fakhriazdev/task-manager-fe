@@ -1,5 +1,5 @@
 import {useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
-import {User,CommonResponse} from "@/lib/user/userType";
+import {User, CommonResponse, NewUser} from "@/lib/user/userType";
 import UserService from "@/lib/user/userService";
 import {UserUpdate} from "@/app/dashboard/members/schemas/schemas";
 import {toast} from "sonner";
@@ -17,22 +17,11 @@ export function useUserAction(): UseQueryResult<User[], Error> {
     });
 }
 
-export function useSuperAction(): UseQueryResult<User[], Error> {
-    return useQuery({
-        queryKey: ['super'],
-        queryFn: async () => {
-            const response: CommonResponse<User[]> = await UserService.getSuper();
-            return response.data ?? [];
-        },
-    });
-}
-
-
-export function useAddUser(): UseMutationResult<CommonResponse<string>, Error, User> {
+export function useAddUser(): UseMutationResult<CommonResponse<string>, Error, NewUser> {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (newUser: User) => {
+        mutationFn: async (newUser: NewUser) => {
             return await UserService.add(newUser);
         },
         onSuccess: (data) => {

@@ -10,7 +10,7 @@ import DataTableRowAction from "@/app/dashboard/ticket/components/TicketTableRow
 export const ticketColumns: ColumnDef<TicketList>[] = [
     {
         accessorKey: "id",
-        header: () => <div className="min-w-24">Report ID</div>,
+        header: () => <div className="min-w-24">Ticket ID</div>,
         enableColumnFilter: true,
         cell: ({ row }) => (
             <Badge variant="outline" className="text-primary font-semibold text-xs">
@@ -69,6 +69,7 @@ export const ticketColumns: ColumnDef<TicketList>[] = [
     {
         accessorKey: "handler",
         header: () => <div className="min-w-28">Handler</div>,
+        accessorFn: (row) => row.handler?.nama ?? "",
         cell: ({ row }) => (
             <Badge variant="outline" className="text-primary font-semibold text-xs">
                 {row.original.handler?.nama ?? "-"}

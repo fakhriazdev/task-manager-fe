@@ -31,7 +31,7 @@ export const accessRegionSchema = z.object({
 })
 
 // Shared Fields for User
-const sharedUserSchemaFields = {
+export const sharedUserSchemaFields = {
     nik: z.string().nonempty("NIK is required"),
     nama: z.string().nonempty("Nama is required"),
     noTelp: z.string().nonempty("No Telepon is required"),
@@ -42,8 +42,40 @@ const sharedUserSchemaFields = {
     statusActive: z.boolean(),
 }
 
-// Create User Schema
 export const UserSchema = z
+    .object({
+        // password: z
+        //     .string()
+        //     .nonempty("Password is required")
+        //     .min(8, "Password must be at least 8 characters long")
+        //     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+        //     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+        //     .regex(/[0-9]/, "Password must contain at least one number")
+        //     .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+        ...sharedUserSchemaFields,
+    })
+    .superRefine((data, ctx) => {
+        const storeRoles = ['SC', 'SPV', 'SPVJ', 'CASHIER']
+        const regionRoles = ['AC']
+
+        if (storeRoles.includes(data.roleId) && data.accessStoreIds.length === 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['accessStoreIds'],
+                message: 'Store access is required for this role',
+            })
+        }
+
+        if (regionRoles.includes(data.roleId) && data.accessRegionIds.length === 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['accessRegionIds'],
+                message: 'Region access is required for this role',
+            })
+        }
+    })
+// Create User Schema
+export const createUserSchema = z
     .object({
         password: z
             .string()

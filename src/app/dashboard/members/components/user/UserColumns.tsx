@@ -1,9 +1,9 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import * as React from "react";
-import { User } from "@/app/dashboard/members/schemas/schemas";
+
 import DataTableRowAction from "@/app/dashboard/members/components/user/UserTableRowAction";
-import {AccessRegions, AccessStores} from "@/lib/user/userType";
+import {AccessRegions, AccessStores, User} from "@/lib/user/userType";
 
 export const userColumns: ColumnDef<User>[] = [
     {

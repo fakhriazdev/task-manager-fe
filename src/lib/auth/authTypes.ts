@@ -2,6 +2,7 @@
 export interface UserInfo {
     nik: string ;
     nama: string;
+    roleId: string;
 }
 
 

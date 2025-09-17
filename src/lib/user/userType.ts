@@ -2,6 +2,17 @@
 export interface User {
     nik: string ;
     nama: string;
+    noTelp: string;
+    email: string;
+    roleId: string;
+    statusActive:boolean
+    accessStoreIds:AccessStores[]
+    accessRegionIds:AccessRegions[]
+}
+
+export interface NewUser {
+    nik: string ;
+    nama: string;
     password: string;
     noTelp: string;
     email: string;

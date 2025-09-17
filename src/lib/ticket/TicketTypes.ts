@@ -95,6 +95,13 @@ export type TicketList = {
     updatedAt: string,
 }
 
+export type SummaryTicketByUser = {
+    nik:string,
+    name: string,
+    total: number,
+    uncompleted:number
+}
+
 export type TicketFormPayload = {
     payload: TicketForm,
     callbackUrl?:string

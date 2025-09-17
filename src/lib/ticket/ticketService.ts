@@ -1,12 +1,28 @@
 import axiosInstance from "@/api/AxiosInstance";
 import { CommonResponse } from "@/lib/roles/rolesTypes";
-import {RepairTransaction, TicketForm, TicketList} from "@/lib/ticket/TicketTypes";
+import {RepairTransaction, SummaryTicketByUser, TicketForm, TicketList} from "@/lib/ticket/TicketTypes";
 
 const baseURL = "/api/tickets";
 
 const ReportServices = {
     getTickets: async (): Promise<CommonResponse<TicketList[]>> => {
         const { data } = await axiosInstance.get(baseURL);
+        if (data.statusCode !== 200 && data.statusCode !== 202) {
+            throw new Error(data.message);
+        }
+        return data;
+    },
+
+    getSummaryByUser: async (): Promise<CommonResponse<SummaryTicketByUser[]>> => {
+        const { data } = await axiosInstance.get(`${baseURL}/summary`);
+        if (data.statusCode !== 200 && data.statusCode !== 202) {
+            throw new Error(data.message);
+        }
+        return data;
+    },
+
+    getTicketByNik: async (nik:string): Promise<CommonResponse<TicketList[]>> => {
+        const { data } = await axiosInstance.get(`${baseURL}/${nik}`);
         if (data.statusCode !== 200 && data.statusCode !== 202) {
             throw new Error(data.message);
         }

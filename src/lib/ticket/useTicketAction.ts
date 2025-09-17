@@ -1,6 +1,6 @@
-import {useMutation, UseMutationResult, useQuery, useQueryClient,} from "@tanstack/react-query";
+import {useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult,} from "@tanstack/react-query";
 import {CommonResponse} from "@/lib/roles/rolesTypes";
-import {RepairTransaction, TicketFormPayload, TicketList} from "@/lib/ticket/TicketTypes";
+import {RepairTransaction, SummaryTicketByUser, TicketFormPayload, TicketList} from "@/lib/ticket/TicketTypes";
 import ReportServices from "@/lib/ticket/ticketService";
 import {toast} from "sonner";
 import {useRouter} from "next/navigation";
@@ -8,12 +8,35 @@ import {useRouter} from "next/navigation";
 
 export function useTicketActions() {
     return useQuery<TicketList[], Error>({
-        queryKey: ["tickets"],
+        queryKey: ["ticket"],
         queryFn: async () => {
             const res = await ReportServices.getTickets();
             return res.data ?? [];
         },
     });
+}
+
+export function useSummaryTicketByUser() {
+    return useQuery<SummaryTicketByUser[], Error>({
+        queryKey: ["summary"],
+        queryFn: async () => {
+            const res = await ReportServices.getSummaryByUser();
+            return res.data ?? [];
+        },
+    });
+}
+
+export function useTicketByNikActions(
+    nik: string
+): UseQueryResult<TicketList[], Error> {
+    return useQuery<TicketList[], Error>({
+        queryKey: ["ticketByNik", nik],
+        queryFn: async () => {
+            const res = await ReportServices.getTicketByNik(nik)
+            return res.data ?? []
+        },
+        enabled: !!nik, // nggak jalan kalau nik kosong
+    })
 }
 
 // ADD ticket
@@ -31,7 +54,7 @@ export function useAddTicket(): UseMutationResult<{ ticketId: string; callbackUr
         },
         onMutate: () => toast.loading("Creating Ticket..."),
         onSuccess: (res) => {
-            queryClient.invalidateQueries({ queryKey: ["tickets"], refetchType: "active" });
+            queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "active" });
             toast.success("Add Ticket Successfully!");
             if (res.callbackUrl != null) {
                 router.push(res.callbackUrl);
@@ -64,7 +87,7 @@ export function useRepairTransaction(): UseMutationResult<
             toast.loading("Sending repair request...");
         },
         onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ["tickets"], refetchType: "active" });
+            queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "active" });
             toast.dismiss();
             toast.success(message ?? "Repair request sent successfully!");
         },
@@ -97,7 +120,7 @@ export function useCompleteTicket(): UseMutationResult<{ ticketId: string }, Err
             toast.dismiss();
             toast.success(`Tiket ${res.ticketId} berhasil diselesaikan`);
             queryClient.invalidateQueries({
-                queryKey: ["tickets"],
+                queryKey: ["ticket"],
                 refetchType: "active",
             });
         },
