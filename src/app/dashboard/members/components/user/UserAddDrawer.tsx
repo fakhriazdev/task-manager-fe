@@ -10,7 +10,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
-import {createUserSchema, Region, Role, Store, User, UserSchema} from '@/app/dashboard/members/schemas/schemas';
+import {createUserSchema, Region, Role, Store} from '@/app/dashboard/members/schemas/schemas';
 import { Formik, Form, Field, ErrorMessage, FieldProps } from 'formik';
 import { useRolesAction } from '@/lib/roles/useRolesAction';
 import { useStoreAction } from '@/lib/store/useStoreAction';
