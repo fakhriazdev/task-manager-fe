@@ -52,7 +52,7 @@ export default function DataTableRowAction({ row }: DataTableRowActionsProps) {
                         setOpen("complete")
                     }}
                 >
-                    Complite
+                    Completed
                 </DropdownMenuItem>
                 {/* Muncul hanya kalau category Transaksi */}
                 {ticket.category?.toLowerCase().trim() === "transaksi" && (
