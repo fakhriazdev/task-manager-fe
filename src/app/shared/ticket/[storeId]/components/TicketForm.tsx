@@ -79,7 +79,7 @@ export default function TicketForm() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
-            <Card className="w-full max-w-2xl shadow-lg">
+            <Card className="w-full max-w-2xl shadow-lg dark:bg-[#2e353f]">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-2xl">
                         <FileImage className="w-6 h-6 text-primary" /> Create New Ticket
