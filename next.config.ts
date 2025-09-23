@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://project-manager-2u5p.onrender.com/api/:path*',
+        destination: 'https://project-management-mje5.onrender.com/api/:path*',
       },
     ];
   },

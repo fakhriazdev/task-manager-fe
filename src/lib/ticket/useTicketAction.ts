@@ -19,7 +19,7 @@ export function useTicketActions() {
 export function useSummaryTicketByUser() {
     return useQuery<SummaryTicketByUser[], Error>({
         queryKey: ["summary"],
-        queryFn: async () => {
+        queryFn: async () => 
             const res = await ReportServices.getSummaryByUser();
             return res.data ?? [];
         },
