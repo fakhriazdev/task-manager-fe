@@ -9,6 +9,7 @@ import {
     IconChevronsRight,
     IconLayoutColumns,
     IconSearch,
+    IconX,
 } from "@tabler/icons-react"
 import {
     Column,
@@ -52,6 +53,10 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 
+import DateRangePicker from "@/components/shared/DateRangePicker"
+import type { DateRange } from "react-day-picker"
+import {DataTableFacet} from "@/app/dashboard/ticket/components/DataTableFacet";
+
 interface DataTableProps<TData> {
     data: TData[]
     columns: ColumnDef<TData>[]
@@ -59,67 +64,43 @@ interface DataTableProps<TData> {
     defaultColumnVisibility?: VisibilityState
 }
 
-// 🔧 helper ambil label header
-export function getHeaderLabel<TData>(
-    col: Column<TData, unknown> | undefined
-): string {
+// 🔧 ambil label header
+export function getHeaderLabel<TData>(col: Column<TData, unknown> | undefined): string {
     if (!col) return ""
-
     const header = col.columnDef.header
-
     if (typeof header === "string") return header
-
     if (typeof header === "function") {
         try {
             const ctx = { column: col } as HeaderContext<TData, unknown>
             const rendered = header(ctx)
-
             if (typeof rendered === "string") return rendered
-
-            if (
-                React.isValidElement<{ children?: React.ReactNode }>(rendered) &&
-                rendered.props
-            ) {
+            if (React.isValidElement<{ children?: React.ReactNode }>(rendered) && rendered.props) {
                 const { children } = rendered.props
                 if (typeof children === "string") return children
-                if (Array.isArray(children)) {
-                    return children.filter((c) => typeof c === "string").join(" ")
-                }
+                if (Array.isArray(children)) return children.filter((c) => typeof c === "string").join(" ")
             }
         } catch {
             return col.id
         }
     }
-
     return col.id
 }
 
 export function DataTableTicket<TData>({
-                                     data,
-                                     columns,
-                                     getRowId = (_, index) => index.toString(),
-                                     defaultColumnVisibility = {},
-                                 }: DataTableProps<TData>) {
-    const [columnVisibility, setColumnVisibility] =
-        React.useState<VisibilityState>(defaultColumnVisibility)
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-        []
-    )
+                                           data,
+                                           columns,
+                                           getRowId = (_, index) => index.toString(),
+                                           defaultColumnVisibility = {},
+                                       }: DataTableProps<TData>) {
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultColumnVisibility)
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const [pagination, setPagination] = React.useState({
-        pageIndex: 0,
-        pageSize: 10,
-    })
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 })
 
     const table = useReactTable({
         data,
         columns,
-        state: {
-            sorting,
-            columnVisibility,
-            columnFilters,
-            pagination,
-        },
+        state: { sorting, columnVisibility, columnFilters, pagination },
         getRowId,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -133,89 +114,116 @@ export function DataTableTicket<TData>({
         getFacetedUniqueValues: getFacetedUniqueValues(),
     })
 
-    // cari kolom filterable
-    const filterableColumns = table
-        .getAllColumns()
-        .filter((col) => col.columnDef.enableColumnFilter)
+    const filterableColumns = table.getAllColumns().filter((col) => col.columnDef.enableColumnFilter)
 
-    // ⏩ langsung set default kolom pertama
     const [searchColumn, setSearchColumn] = React.useState<string | null>(
         filterableColumns.length > 0 ? filterableColumns[0].id : null
     )
 
+    // 📅 Date range untuk kolom 'createdAt'
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined)
+
+    const applyDateFilter = React.useCallback(
+        (range: DateRange | undefined) => {
+            setDateRange(range)
+            table.getColumn("createdAt")?.setFilterValue(
+                range
+                    ? {
+                        from: range.from ?? null,
+                        to: range.to ?? range.from ?? null,
+                    }
+                    : undefined
+            )
+        },
+        [table]
+    )
+
+    const clearDateFilter = React.useCallback(() => {
+        setDateRange(undefined)
+        table.getColumn("createdAt")?.setFilterValue(undefined)
+    }, [table])
+
+
     return (
         <div className="w-full flex flex-col gap-6">
-            {/* Toolbar: Search & Column Visibility */}
-            <div className="flex items-center justify-between px-4 lg:px-6 gap-4">
-                {filterableColumns.length > 0 && (
-                    <div className="flex gap-2 w-full max-w-md">
-                        {/* 🔎 Search */}
-                        <div className="relative flex-1">
-                            <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder={`Search by ${getHeaderLabel(
-                                    filterableColumns.find((c) => c.id === searchColumn) ??
-                                    filterableColumns[0]
-                                )}`}
-                                className="pl-8"
-                                value={
-                                    searchColumn
-                                        ? ((table.getColumn(searchColumn)?.getFilterValue() as string) ??
-                                            "")
-                                        : ""
-                                }
-                                onChange={(e) => {
-                                    if (searchColumn) {
-                                        table
-                                            .getColumn(searchColumn)
-                                            ?.setFilterValue(e.target.value)
+            {/* Toolbar */}
+            <div className="flex flex-col gap-3 px-4 lg:px-6 lg:flex-row lg:items-center lg:justify-between">
+                {/* Search */}
+                <div className="flex gap-2 w-full lg:max-w-sm">
+                    {filterableColumns.length > 0 && (
+                        <>
+                            <div className="relative flex-1">
+                                <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder={`Search by ${getHeaderLabel(
+                                        filterableColumns.find((c) => c.id === searchColumn) ?? filterableColumns[0]
+                                    )}`}
+                                    className="pl-8"
+                                    value={
+                                        searchColumn
+                                            ? ((table.getColumn(searchColumn)?.getFilterValue() as string) ?? "")
+                                            : ""
                                     }
-                                }}
-                            />
-                        </div>
+                                    onChange={(e) => {
+                                        if (searchColumn) table.getColumn(searchColumn)?.setFilterValue(e.target.value)
+                                    }}
+                                />
+                            </div>
 
-                        {/* pilih kolom filter */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    {getHeaderLabel(
-                                        filterableColumns.find((c) => c.id === searchColumn) ??
-                                        filterableColumns[0]
-                                    )}
-                                    <IconChevronDown className="ml-1 h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {filterableColumns.map((col) => {
-                                    const headerLabel = getHeaderLabel(col)
-                                    return (
-                                        <DropdownMenuItem
-                                            key={col.id}
-                                            onClick={() => {
-                                                filterableColumns.forEach((c) =>
-                                                    table.getColumn(c.id)?.setFilterValue("")
-                                                )
-                                                setSearchColumn(col.id)
-                                            }}
-                                        >
-                                            {headerLabel}
-                                        </DropdownMenuItem>
-                                    )
-                                })}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                )}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        {getHeaderLabel(filterableColumns.find((c) => c.id === searchColumn) ?? filterableColumns[0])}
+                                        <IconChevronDown className="ml-1 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {filterableColumns.map((col) => {
+                                        const headerLabel = getHeaderLabel(col)
+                                        return (
+                                            <DropdownMenuItem
+                                                key={col.id}
+                                                onClick={() => {
+                                                    // reset nilai filter text saat ganti kolom
+                                                    filterableColumns.forEach((c) => table.getColumn(c.id)?.setFilterValue(""))
+                                                    setSearchColumn(col.id)
+                                                }}
+                                            >
+                                                {headerLabel}
+                                            </DropdownMenuItem>
+                                        )
+                                    })}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </>
+                    )}
+                </div>
 
-                {/* Customize Columns */}
+
+                {/* Date Range + Columns */}
                 <div className="flex items-center gap-2">
+                    <DataTableFacet table={table} columnId="status" title="Status" maxChips={3}/>
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={applyDateFilter}
+                        placeholder="Created Date"
+                        align="end"
+                        side="bottom"
+                    />
+                    {dateRange?.from && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={clearDateFilter}>
+                            <IconX className="h-4 w-4" />
+                            <span className="sr-only">Clear date filter</span>
+                        </Button>
+                    )}
+
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <IconLayoutColumns />
-                                <span className="hidden lg:inline">Customize Columns</span>
+                            <Button variant="outline" size="sm" className="gap-1">
+                                <IconLayoutColumns className="h-4 w-4" />
+                                <span className="hidden lg:inline">View</span>
                                 <span className="lg:hidden">Columns</span>
-                                <IconChevronDown />
+                                <IconChevronDown className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
@@ -227,9 +235,7 @@ export function DataTableTicket<TData>({
                                         key={column.id}
                                         className="capitalize"
                                         checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
+                                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
                                     >
                                         {getHeaderLabel(column)}
                                     </DropdownMenuCheckboxItem>
@@ -250,10 +256,7 @@ export function DataTableTicket<TData>({
                                         <TableHead key={header.id} colSpan={header.colSpan}>
                                             {header.isPlaceholder
                                                 ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
+                                                : flexRender(header.column.columnDef.header, header.getContext())}
                                         </TableHead>
                                     ))}
                                 </TableRow>
@@ -265,20 +268,14 @@ export function DataTableTicket<TData>({
                                     <TableRow key={row.id}>
                                         {row.getVisibleCells().map((cell) => (
                                             <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </TableCell>
                                         ))}
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
+                                    <TableCell colSpan={columns.length} className="h-24 text-center">
                                         No results.
                                     </TableCell>
                                 </TableRow>
@@ -297,14 +294,10 @@ export function DataTableTicket<TData>({
                             </Label>
                             <Select
                                 value={`${table.getState().pagination.pageSize}`}
-                                onValueChange={(value) => {
-                                    table.setPageSize(Number(value))
-                                }}
+                                onValueChange={(value) => table.setPageSize(Number(value))}
                             >
                                 <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                                    <SelectValue
-                                        placeholder={`${table.getState().pagination.pageSize}`}
-                                    />
+                                    <SelectValue placeholder={`${table.getState().pagination.pageSize}`} />
                                 </SelectTrigger>
                                 <SelectContent side="top">
                                     {[10, 15, 20, 25, 30].map((pageSize) => (
@@ -316,8 +309,7 @@ export function DataTableTicket<TData>({
                             </Select>
                         </div>
                         <div className="flex w-fit items-center justify-center text-sm font-medium">
-                            Page {table.getState().pagination.pageIndex + 1} of{" "}
-                            {table.getPageCount()}
+                            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
                         </div>
                         <div className="ml-auto flex items-center gap-2 lg:ml-0">
                             <Button

@@ -82,6 +82,14 @@ const ReportServices = {
             throw new Error(data.message);
         }
         return data;
+    },
+
+    reassignTicket: async (payload: { ticketId:string,nik:string }):Promise<CommonResponse<string>> => {
+        const { data } = await axiosInstance.post(`${baseURL}/reassign-ticket`, payload);
+        if (data.statusCode !== 200 && data.statusCode !== 201) {
+            throw new Error(data.message);
+        }
+        return data;
     }
 };
 

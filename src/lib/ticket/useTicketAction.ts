@@ -131,3 +131,67 @@ export function useCompleteTicket(): UseMutationResult<{ ticketId: string }, Err
     });
 }
 
+export function useReassignTicket(): UseMutationResult<
+    string,
+    Error,
+    { ticketId: string; nik: string }
+> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (payload) => {
+            const res: CommonResponse<string> = await ReportServices.reassignTicket(payload);
+            if (!res.data) throw new Error("Gagal reassign tiket: tidak ada data dari server");
+            return res.data; // contoh: "OK" atau ticketId
+        },
+
+        onMutate: async ({ ticketId, nik }) => {
+            toast.dismiss();
+            toast.loading("Mengalihkan handler tiket...");
+
+            // 🔄 Optimistic update untuk list ["ticket"]
+            await queryClient.cancelQueries({ queryKey: ["ticket"] });
+            const prevTickets = queryClient.getQueryData<TicketList[]>(["ticket"]);
+
+            if (prevTickets) {
+                queryClient.setQueryData<TicketList[]>(["ticket"], (old) =>
+                    (old ?? []).map((t) =>
+                        t.id === ticketId
+                            ? { ...t, handler: { nik, nama: t.handler?.nama ?? nik } }
+                            : t
+                    )
+                );
+            }
+
+            return { prevTickets }; // kembalikan untuk rollback jika error
+        },
+
+        onSuccess: async () => {
+            // ✅ Invalidate daftar tiket umum
+            await queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "active" });
+
+            // ✅ Invalidate semua query ticketByNik apapun param-nya (nik lama/baru)
+            await queryClient.invalidateQueries({
+                predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "ticketByNik",
+                refetchType: "active",
+            });
+
+            // ✅ Invalidate ringkasan per user
+            await queryClient.invalidateQueries({ queryKey: ["summary"], refetchType: "active" });
+
+            toast.dismiss();
+            toast.success("Tiket berhasil dialihkan");
+        },
+
+        onError: (error, _vars, ctx) => {
+            // ♻️ Rollback optimistic jika perlu
+            if (ctx?.prevTickets) {
+                queryClient.setQueryData(["ticket"], ctx.prevTickets);
+            }
+            toast.dismiss();
+            toast.error(error.message ?? "Gagal mengalihkan tiket");
+        },
+    });
+}
+
+

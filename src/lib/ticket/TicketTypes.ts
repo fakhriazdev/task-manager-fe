@@ -88,7 +88,7 @@ export type TicketList = {
     billCode: string,
     grandTotal: string,
     images: Image[];
-    handler: { nama: string | null; };
+    handler: { nik:string ,nama: string; };
     completedBy: { nama: string | null; };
     completedAt:string | null;
     createdAt: string,
