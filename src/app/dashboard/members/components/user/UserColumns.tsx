@@ -55,6 +55,15 @@ export const userColumns: ColumnDef<User>[] = [
         ),
     },
     {
+        accessorKey: "handleWeb",
+        header: "Handle Web",
+        cell: ({ row }) => (
+            <Badge variant="outline" className="text-primary font-semibold text-xs">
+                {!row.original.handleWeb ? 'NO' : "YES"}
+            </Badge>
+        ),
+    },
+    {
         accessorKey: "accessStores",
         header: "Access Stores",
         cell: ({ row }) => {

@@ -1,6 +1,4 @@
-// =======================================
-// app/shared/schemas/form.ts
-// =======================================
+
 import * as Yup from 'yup';
 import {
     CATEGORY_VALUES,

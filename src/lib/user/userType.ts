@@ -5,7 +5,8 @@ export interface User {
     noTelp: string;
     email: string;
     roleId: string;
-    statusActive:boolean
+    statusActive:boolean;
+    handleWeb:boolean;
     accessStoreIds:AccessStores[]
     accessRegionIds:AccessRegions[]
 }
@@ -18,6 +19,7 @@ export interface NewUser {
     email: string;
     roleId: string;
     statusActive:boolean
+    handleWeb:boolean;
     accessStoreIds:AccessStores[]
     accessRegionIds:AccessRegions[]
 }

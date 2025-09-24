@@ -36,6 +36,7 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
     const [roleField, setRoleField] = useState({
         fieldRegion: false,
         fieldStores: false,
+        fieldHandleWeb:false
     });
 
     const initialValues: NewUser = {
@@ -48,6 +49,7 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
         accessStoreIds: [],
         accessRegionIds: [],
         statusActive: false,
+        handleWeb: false,
     };
 
     const handleRoleChange = (
@@ -58,17 +60,23 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
         setFieldValue('accessRegionIds', []);
 
         switch (roleId) {
+            case 'SUPER':
+                setRoleField({ fieldStores: false, fieldRegion: false, fieldHandleWeb: true });
+                break
+            case 'ADMIN':
+                setRoleField({ fieldStores: false, fieldRegion: false, fieldHandleWeb: true });
+                break
             case 'SC':
             case 'SPV':
             case 'SPVJ':
             case 'CASHIER':
-                setRoleField({ fieldStores: true, fieldRegion: false });
+                setRoleField({ fieldStores: true, fieldRegion: false, fieldHandleWeb: false });
                 break;
             case 'AC':
-                setRoleField({ fieldStores: false, fieldRegion: true });
+                setRoleField({ fieldStores: false, fieldRegion: true, fieldHandleWeb: false  });
                 break;
             default:
-                setRoleField({ fieldStores: false, fieldRegion: false });
+                setRoleField({ fieldStores: false, fieldRegion: false, fieldHandleWeb: false  });
         }
     };
 
@@ -183,6 +191,26 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
                                 <ErrorMessage name="password" component="div" className="text-sm text-red-500 mt-1" />
                             </div>
 
+                            {roleField.fieldHandleWeb && (
+                                <div>
+                                    <label className="text-sm font-medium">Handle Web</label>
+                                    <Field name="handleWeb">
+                                        {({ field }: FieldProps<boolean>) => (
+                                            <select
+                                                {...field}
+                                                className="mt-1 w-full rounded border px-3 py-2 text-sm"
+                                                value={field.value ? 'true' : 'false'}
+                                                onChange={(e) => setFieldValue('handleWeb', e.target.value === 'true')}
+                                            >
+                                                <option value="true">YES</option>
+                                                <option value="false">NO</option>
+                                            </select>
+                                        )}
+                                    </Field>
+                                    <ErrorMessage name="handleWeb" component="div" className="text-sm text-red-500 mt-1" />
+                                </div>
+                            )}
+
                             {/* Status */}
                             <div>
                                 <label className="text-sm font-medium">Status</label>
@@ -273,6 +301,7 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
                                     )}
                                 </Field>
                             )}
+
 
                             <SheetFooter className="gap-2 mt-auto pt-4">
                                 <SheetClose asChild>
