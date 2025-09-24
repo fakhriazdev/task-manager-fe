@@ -28,7 +28,7 @@ export default function Page() {
     // Helper: tentukan tab awal yang valid berdasarkan role & data
     const computeFirstTab = React.useCallback((): string | undefined => {
         if (!items.length) return undefined;
-        if (isSuper) return "all";
+        // if (isSuper) return "all";
         return user?.nik ?? undefined;
     }, [items.length, isSuper, user?.nik]);
 
