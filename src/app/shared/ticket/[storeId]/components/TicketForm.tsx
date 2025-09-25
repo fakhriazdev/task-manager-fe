@@ -251,7 +251,7 @@ export default function TicketForm() {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {/* From Payment */}
                                                 <div className="space-y-2">
-                                                    <Label>From Payment *</Label>
+                                                    <Label>Tercatat Pembayaran Saat Ini *</Label>
                                                     <Field name="fromPayment">
                                                         {({ meta }: { meta: FieldMetaProps<TicketForm["fromPayment"]> }) => (
                                                             <>
@@ -292,7 +292,7 @@ export default function TicketForm() {
 
                                                 {/* To Payment */}
                                                 <div className="space-y-2">
-                                                    <Label>To Payment *</Label>
+                                                    <Label>Seharusnya ke *</Label>
                                                     <Field name="toPayment">
                                                         {({ meta }: { meta: FieldMetaProps<TicketForm["toPayment"]> }) => (
                                                             <>

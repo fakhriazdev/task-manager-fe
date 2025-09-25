@@ -152,8 +152,8 @@ export default function TicketDetailDrawer({
                                 <InfoItem label="No. Telepon" value={currentRow.noTelp} />
                                 <InfoItem label="Description" value={currentRow.description} full />
                                 <InfoItem label="BillCode" value={currentRow.billCode} full />
-                                <InfoItem label="From Payment" value={getPaymentLabel(currentRow.fromPayment)} />
-                                <InfoItem label="To Payment" value={getPaymentLabel(currentRow.toPayment)} />
+                                <InfoItem label="Pembayaran Saat ini" value={getPaymentLabel(currentRow.fromPayment)} />
+                                <InfoItem label="Seharusnya ke" value={getPaymentLabel(currentRow.toPayment)} />
                                 <InfoItem
                                     label="Completed At"
                                     value={
