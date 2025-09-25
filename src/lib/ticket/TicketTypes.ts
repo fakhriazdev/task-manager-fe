@@ -6,6 +6,9 @@
 export const CATEGORY_OPTIONS = [
     { value: 'Transaksi', label: 'Transaction Issues' },
     { value: 'U92',       label: 'U92 Issues' },
+    { value: 'Voucher',       label: 'Voucher Issues' },
+    { value: 'ST IN/OUT',       label: 'ST IN/OUT Issues' },
+    { value: 'Inventory',       label: 'Inventory Issues' },
     { value: 'LOGOFF',    label: 'LOGOFF Issues' },
     { value: 'Kas Kecil',     label: 'Web - Kas Kecil Issues' },
     { value: 'Web Other',     label: 'Web - Other Issues' },
