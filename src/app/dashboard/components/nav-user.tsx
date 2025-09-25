@@ -31,6 +31,7 @@ import { useAuthActions } from "@/lib/auth/useAuthAction";
 import {UserInfo} from "@/lib/auth/authTypes";
 import {Skeleton} from "@/components/ui/skeleton";
 import React from "react";
+import Link from "next/link";
 export default function NavUser({
   user,
 }: {
@@ -95,14 +96,24 @@ export default function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
+              <DropdownMenuItem
+              asChild
+              disabled={logout.status === 'pending'}
+              className={logout.status === 'pending' ? 'opacity-50 pointer-events-none' : ''}
+              >
+                <Link
+                    href={"/dashboard/user-settings"}
+                    className="flex items-center gap-2 w-full text-left"
+                >
+                  <IconUserCircle />
+                  Account
+                </Link>
+
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem>
+              {/*<DropdownMenuItem>*/}
+              {/*  <IconNotification />*/}
+              {/*  Notifications*/}
+              {/*</DropdownMenuItem>*/}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
