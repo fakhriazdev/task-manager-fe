@@ -24,6 +24,7 @@ export const CATEGORY_VALUES =
 
 // ---------- Payment ----------
 export const PAYMENT_OPTIONS = [
+    { value: 'CASH',      label: 'CASH' },
     { value: 'DBCA',      label: 'D.BCA' },
     { value: 'DBNI',      label: 'D.BNI' },
     { value: 'DBRI',      label: 'D.BRI' },
@@ -38,6 +39,7 @@ export const PAYMENT_OPTIONS = [
     { value: 'QRISBRI',  label: 'D.QRIS BRI' },
     { value: 'QRISMDR',  label: 'D.QRIS MDR' },
     { value: 'KINDODANA', label: 'K.INDODANA' },
+    { value: 'KATOME', label: 'K.ATOME' },
 ] as const;
 
 // const paymentMap = Object.fromEntries(
