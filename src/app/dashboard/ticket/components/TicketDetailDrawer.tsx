@@ -272,9 +272,10 @@ export default function TicketDetailDrawer({
                                 {/* Pilih salah satu: <img> sederhana ATAU Next <Image fill> */}
 
                                 {/* Opsi 1: img biasa */}
-                                <img
+                                <Image
                                     src={images[lbIndex]?.url}
                                     alt={`ticket-${images[lbIndex]?.id}`}
+                                    fill
                                     className="max-w-full max-h-full object-contain select-none"
                                     draggable
                                 />
