@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { TicketList, EStatus } from '@/lib/ticket/TicketTypes'
+import {TicketList, EStatus, getPaymentLabel} from '@/lib/ticket/TicketTypes'
 import { formatDateTime } from '@/lib/utils'
 import {
     Check,
@@ -152,8 +152,8 @@ export default function TicketDetailDrawer({
                                 <InfoItem label="No. Telepon" value={currentRow.noTelp} />
                                 <InfoItem label="Description" value={currentRow.description} full />
                                 <InfoItem label="BillCode" value={currentRow.billCode} full />
-                                <InfoItem label="From Payment" value={currentRow.fromPayment} />
-                                <InfoItem label="To Payment" value={currentRow.toPayment} />
+                                <InfoItem label="From Payment" value={getPaymentLabel(currentRow.fromPayment)} />
+                                <InfoItem label="To Payment" value={getPaymentLabel(currentRow.toPayment)} />
                                 <InfoItem
                                     label="Completed At"
                                     value={

@@ -42,14 +42,14 @@ export const PAYMENT_OPTIONS = [
     { value: 'KATOME', label: 'K.ATOME' },
 ] as const;
 
-// const paymentMap = Object.fromEntries(
-//     PAYMENT_OPTIONS.map((opt) => [opt.value, opt.label])
-// );
-//
-// export function getPaymentLabel(value?: string | null): string {
-//     if (!value) return "-";
-//     return paymentMap[value] ?? value;
-// }
+const paymentMap = Object.fromEntries(
+    PAYMENT_OPTIONS.map((opt) => [opt.value, opt.label])
+);
+
+export function getPaymentLabel(value?: string | null): string {
+    if (!value) return "-";
+    return paymentMap[value] ?? value;
+}
 
 export type PaymentOption = typeof PAYMENT_OPTIONS[number];
 export type PaymentCode   = PaymentOption['value'];
