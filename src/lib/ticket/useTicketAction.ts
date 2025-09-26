@@ -98,46 +98,51 @@ export function useRepairTransaction(): UseMutationResult<
     });
 }
 
-export function useCompleteTicket(): UseMutationResult<{ ticketId: string }, Error,
+export function useCompleteTicket(): UseMutationResult<
+    { ticketId: string },
+    Error,
     { ticketId: string }
 > {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (payload: { ticketId: string }) => {
-            console.log(payload,'param ')
             const res: CommonResponse<string> = await ReportServices.ticketComplete(payload);
-            if (!res.data) {
-                throw new Error("Complete ticket gagal: tidak ada data");
-            }
-
+            if (!res.data) throw new Error("Complete ticket gagal: tidak ada data");
             return { ticketId: res.data };
         },
+
         onMutate: () => {
             toast.loading("Menyelesaikan tiket...");
         },
-        onSuccess: async (res) => {
-            // ✅ Invalidate daftar tiket umum
-            await queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "active" });
 
-            // ✅ Invalidate semua query ticketByNik apapun param-nya (nik lama/baru)
+        onSuccess: async (res) => {
+            // tandai stale SEMUA query terkait
+            await queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "all" });
             await queryClient.invalidateQueries({
                 predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "ticketByNik",
-                refetchType: "active",
+                refetchType: "all",
             });
+            await queryClient.invalidateQueries({ queryKey: ["summary"], refetchType: "all" });
 
-            // ✅ Invalidate ringkasan per user
-            await queryClient.invalidateQueries({ queryKey: ["summary"], refetchType: "active" });
+            // langsung refetch sekarang (tanpa nunggu mount/focus)
+            await queryClient.refetchQueries({ queryKey: ["ticket"] });
+            await queryClient.refetchQueries({
+                predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "ticketByNik",
+            });
+            await queryClient.refetchQueries({ queryKey: ["summary"] });
 
             toast.dismiss();
             toast.success(`Tiket ${res.ticketId} berhasil diselesaikan`);
         },
+
         onError: (error) => {
             toast.dismiss();
             toast.error(error.message ?? "Gagal menyelesaikan tiket");
         },
     });
 }
+
 
 export function useReassignTicket(): UseMutationResult<
     string,
