@@ -116,13 +116,21 @@ export function useCompleteTicket(): UseMutationResult<{ ticketId: string }, Err
         onMutate: () => {
             toast.loading("Menyelesaikan tiket...");
         },
-        onSuccess: (res) => {
-            toast.dismiss();
-            toast.success(`Tiket ${res.ticketId} berhasil diselesaikan`);
-            queryClient.invalidateQueries({
-                queryKey: ["ticket"],
+        onSuccess: async (res) => {
+            // ✅ Invalidate daftar tiket umum
+            await queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "active" });
+
+            // ✅ Invalidate semua query ticketByNik apapun param-nya (nik lama/baru)
+            await queryClient.invalidateQueries({
+                predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "ticketByNik",
                 refetchType: "active",
             });
+
+            // ✅ Invalidate ringkasan per user
+            await queryClient.invalidateQueries({ queryKey: ["summary"], refetchType: "active" });
+
+            toast.dismiss();
+            toast.success(`Tiket ${res.ticketId} berhasil diselesaikan`);
         },
         onError: (error) => {
             toast.dismiss();
