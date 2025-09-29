@@ -7,10 +7,9 @@ import {
 } from "@/components/ui/card";
 import { PillIndicator } from "@/components/ui/shadcn-io/pill";
 import {
-    IconCopyPlusFilled,
     IconRosetteDiscount,
     IconTicket,
-    IconUrgent, IconUsers
+    IconUsers
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
