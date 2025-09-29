@@ -1,6 +1,6 @@
 "use client"
 
-import {type Icon, IconCirclePlusFilled} from "@tabler/icons-react"
+import {type Icon} from "@tabler/icons-react"
 
 import {
   SidebarGroup,
