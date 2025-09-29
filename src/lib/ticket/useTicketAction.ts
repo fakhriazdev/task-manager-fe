@@ -11,11 +11,14 @@ export function useTicketActions() {
         queryKey: ["ticket"],
         queryFn: async () => {
             const res = await ReportServices.getTickets();
-            return res.data ?? [];
+            const data = res.data ?? [];
+            // sort ascending by createdAt
+            return data.sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
         },
     });
 }
-
 export function useSummaryTicketByUser() {
     return useQuery<SummaryTicketByUser[], Error>({
         queryKey: ["summary"],
@@ -33,7 +36,10 @@ export function useTicketByNikActions(
         queryKey: ["ticketByNik", nik],
         queryFn: async () => {
             const res = await ReportServices.getTicketByNik(nik)
-            return res.data ?? []
+            const data = res.data ?? [];
+            return data.sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
         },
         enabled: !!nik, // nggak jalan kalau nik kosong
     })

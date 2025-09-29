@@ -7,7 +7,6 @@ import {
     IconUsers,
     IconRosetteDiscount,
     IconTicket,
-    IconUrgent,
 } from "@tabler/icons-react"
 import { NavMain } from "@/app/dashboard/components/nav-main"
 const NavUser = React.lazy(() => import('./nav-user'))
@@ -35,7 +34,6 @@ const data = {
         { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
         { title: "Promosi", url: "/dashboard/promosi", icon: IconRosetteDiscount },
         { title: "Ticket", url: "/dashboard/ticket", icon: IconTicket },
-        { title: "My Report", url: "/dashboard/myreport", icon: IconUrgent },
         { title: "Members", url: "/dashboard/members", icon: IconUsers },
     ],
 }

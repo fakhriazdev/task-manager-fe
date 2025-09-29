@@ -46,35 +46,35 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-                tooltip="Quick Create"
-                className="
-    min-w-8
-    bg-blue-900
-    text-primary-foreground
-    dark:bg-blue-900
-    dark:text-primary
-    hover:bg-blue-950
-    hover:text-primary-foreground
-    dark:hover:bg-blue-950
-    dark:hover:text-text-primary-foreground
-    duration-200
-    ease-linear
-  "
-            >
-              <IconCirclePlusFilled />
-              <span>Quick Create</span>
-            </SidebarMenuButton>
-            {/*<Button*/}
-            {/*    size="icon"*/}
-            {/*    className="size-8 group-data-[collapsible=icon]:opacity-0"*/}
-            {/*    variant="outline"*/}
-            {/*>*/}
-            {/*  <IconMail />*/}
-            {/*  <span className="sr-only">Inbox</span>*/}
-            {/*</Button>*/}
-          </SidebarMenuItem>
+  {/*        <SidebarMenuItem className="flex items-center gap-2">*/}
+  {/*          <SidebarMenuButton*/}
+  {/*              tooltip="Quick Create"*/}
+  {/*              className="*/}
+  {/*  min-w-8*/}
+  {/*  bg-blue-900*/}
+  {/*  text-primary-foreground*/}
+  {/*  dark:bg-blue-900*/}
+  {/*  dark:text-primary*/}
+  {/*  hover:bg-blue-950*/}
+  {/*  hover:text-primary-foreground*/}
+  {/*  dark:hover:bg-blue-950*/}
+  {/*  dark:hover:text-text-primary-foreground*/}
+  {/*  duration-200*/}
+  {/*  ease-linear*/}
+  {/*"*/}
+  {/*          >*/}
+  {/*            <IconCirclePlusFilled />*/}
+  {/*            <span>Quick Create</span>*/}
+  {/*          </SidebarMenuButton>*/}
+  {/*          /!*<Button*!/*/}
+  {/*          /!*    size="icon"*!/*/}
+  {/*          /!*    className="size-8 group-data-[collapsible=icon]:opacity-0"*!/*/}
+  {/*          /!*    variant="outline"*!/*/}
+  {/*          /!*>*!/*/}
+  {/*          /!*  <IconMail />*!/*/}
+  {/*          /!*  <span className="sr-only">Inbox</span>*!/*/}
+  {/*          /!*</Button>*!/*/}
+  {/*        </SidebarMenuItem>*/}
         </SidebarMenu>
         <SidebarMenu>
           {items.map((item) => (
