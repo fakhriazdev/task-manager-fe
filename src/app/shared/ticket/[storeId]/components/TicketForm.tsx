@@ -73,6 +73,7 @@ export default function TicketForm() {
         toPayment: '',
         isDirectSelling: false,
         billCode: '',
+        idtv:'',
         grandTotal: '',
         images: new DataTransfer().files,
     };
@@ -422,6 +423,30 @@ export default function TicketForm() {
                                         </div>
                                     )}
 
+                                    {/* IDTV */}
+                                    <div className="space-y-2">
+                                        <Label>ID Team Viewer *</Label>
+                                        <Field name="idtv">
+                                            {({
+                                                  field,
+                                                  meta,
+                                              }: FieldProps<string | null, TicketForm>) => (
+                                                <>
+                                                    <Input
+                                                        {...field}
+                                                        value={field.value?.toUpperCase() ?? ''}
+                                                        placeholder="Enter bill code"
+                                                        maxLength={10}
+                                                    />
+                                                    {meta.touched && meta.error && (
+                                                        <p className="text-sm text-destructive">
+                                                            {meta.error}
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </Field>
+                                    </div>
 
 
                                     {/* Image Upload */}

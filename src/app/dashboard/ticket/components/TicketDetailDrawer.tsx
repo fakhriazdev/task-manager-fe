@@ -100,6 +100,11 @@ export default function TicketDetailDrawer({
                 style = 'text-blue-600 border-blue-600 bg-blue-50'
                 icon = <Clock className="h-4 w-4" />
                 break
+            case EStatus.PENDING:
+                label = 'Pending'
+                style = 'text-yellow-600 border-yellow-600 bg-yellow-50'
+                icon = <Clock className="h-4 w-4" />
+                break
             case EStatus.FAILED:
                 label = 'Failed'
                 style = 'text-red-600 border-red-600 bg-red-50'
@@ -166,6 +171,7 @@ export default function TicketDetailDrawer({
                                     label="Completed By"
                                     value={currentRow?.completedBy?.nama ?? '-'}
                                 />
+                                <InfoItem label="ID Team Viewer" value={currentRow.idtv} full />
                             </div>
 
                             {/* Images Carousel */}

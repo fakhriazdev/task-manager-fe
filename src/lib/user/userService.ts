@@ -1,5 +1,5 @@
 import axiosInstance from "@/api/AxiosInstance";
-import {User, CommonResponse, NewUser} from "@/lib/user/userType";
+import {User, CommonResponse, NewUser, UpdatePassword} from "@/lib/user/userType";
 import {UserUpdate} from "@/app/dashboard/members/schemas/schemas";
 
 const baseURL = '/api/users';
@@ -31,6 +31,14 @@ const StoreService = {
     },
     resetPassword: async (nik: string): Promise<CommonResponse<string>> => {
         const { data } = await axiosInstance.patch(`${baseURL}/reset-password/${nik}`);
+        if (data.statusCode !== 200 && data.statusCode !== 202) {
+            throw new Error(data.message);
+        }
+        return data;
+    },
+
+    updatePassword: async (req:UpdatePassword): Promise<CommonResponse<string>> => {
+        const { data } = await axiosInstance.patch(`${baseURL}/change-password/${req.nik}`);
         if (data.statusCode !== 200 && data.statusCode !== 202) {
             throw new Error(data.message);
         }

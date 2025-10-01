@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {TicketList} from "@/lib/ticket/TicketTypes";
 
-type TicketDialogType = 'detail' | 'confirm' | 'complete';
+type TicketDialogType = 'detail' | 'confirm' | 'complete' | 'pending';
 
 interface TicketState {
     open: TicketDialogType | null;

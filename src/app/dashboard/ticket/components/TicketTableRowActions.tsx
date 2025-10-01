@@ -54,6 +54,16 @@ export default function DataTableRowAction({ row }: DataTableRowActionsProps) {
                 >
                     Completed
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                    disabled={ticket.status === EStatus.ONPROCESS || ticket.status === EStatus.COMPLETED || ticket.status === EStatus.PENDING}
+                    onClick={() => {
+                        if (ticket.status === EStatus.ONPROCESS || ticket.status === EStatus.COMPLETED || ticket.status === EStatus.PENDING) return
+                        setCurrentRow(ticket)
+                        setOpen("pending")
+                    }}
+                >
+                    Pending
+                </DropdownMenuItem>
                 {/* Muncul hanya kalau category Transaksi */}
                 {ticket.category?.toLowerCase().trim() === "transaksi" && (
                     <>

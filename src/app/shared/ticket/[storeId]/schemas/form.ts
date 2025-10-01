@@ -89,6 +89,12 @@ export const validationShape = {
         .max(200, 'Description tidak boleh lebih dari 200 karakter')
         .default(''),
 
+    idtv: Yup.string()
+        .required('ID Team Viewer wajib diisi')
+        .matches(/^\d+$/, 'ID Team Viewer hanya boleh berisi angka')
+        .min(10, 'ID Team Viewer 10 karakter')
+        .max(10, 'ID Team Viewer maximal 10 karakter'),
+
     fromPayment: fromPaymentField,
     toPayment: toPaymentField,
 

@@ -149,6 +149,46 @@ export function useCompleteTicket(): UseMutationResult<
     });
 }
 
+export function usePendingTicket() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: async (payload: { ticketId: string; reason: string }) => {
+            const res = await ReportServices.ticketPending(payload)
+            if (!res.data) throw new Error("Pending ticket gagal: tidak ada data")
+            return {ticketId: res.data}
+        },
+
+        onMutate: () => {
+            toast.loading("Sedang melakukan pending tiket...")
+        },
+
+        onSuccess: async (res) => {
+            // tandai stale SEMUA query terkait
+            await queryClient.invalidateQueries({queryKey: ["ticket"], refetchType: "all"});
+            await queryClient.invalidateQueries({
+                predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "ticketByNik",
+                refetchType: "all",
+            });
+            await queryClient.invalidateQueries({queryKey: ["summary"], refetchType: "all"});
+
+            // langsung refetch sekarang (tanpa nunggu mount/focus)
+            await queryClient.refetchQueries({queryKey: ["ticket"]});
+            await queryClient.refetchQueries({
+                predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "ticketByNik",
+            });
+            await queryClient.refetchQueries({queryKey: ["summary"]});
+
+            toast.dismiss();
+            toast.success(`Tiket ${res.ticketId} berhasil diPending`);
+        },
+
+        onError: (error) => {
+            toast.dismiss()
+            toast.error(error.message ?? "Gagal pending tiket")
+        },
+    })
+}
 
 export function useReassignTicket(): UseMutationResult<
     string,
@@ -212,5 +252,3 @@ export function useReassignTicket(): UseMutationResult<
         },
     });
 }
-
-

@@ -66,6 +66,7 @@ export type TicketForm = {
     fromPayment?: PaymentCode | "";
     toPayment?: PaymentCode | "";
     isDirectSelling?: boolean;
+    idtv:string;
     billCode?: string;
     grandTotal?: string;
     images: FileList;
@@ -76,6 +77,7 @@ export enum EStatus {
     ONPROCESS = 'ONPROCESS',
     COMPLETED = 'COMPLETED',
     FAILED = 'FAILED',
+    PENDING = 'PENDING',
 }
 
 type Image = {
@@ -99,6 +101,8 @@ export type TicketList = {
     handler: { nik:string ,nama: string; };
     completedBy: { nama: string | null; };
     completedAt:string | null;
+    idtv:string | null;
+    reason:string | null;
     createdAt: string,
     updatedAt: string,
 }

@@ -31,6 +31,12 @@ export interface AccessRegions {
     regionId: string;
 }
 
+export interface UpdatePassword {
+    nik: string ;
+    currentPassword: string;
+    newPassword: string;
+}
+
 export interface CommonResponse <T>{
     message: string;
     statusCode: number;

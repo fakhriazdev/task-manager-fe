@@ -47,6 +47,7 @@ const ReportServices = {
         formData.append("noTelp", payload.noTelp);
         formData.append("category", payload.category);
         formData.append("description", payload.description);
+        formData.append("idtv", payload.idtv);
 
 
         // optional → tetap kirim walau kosong
@@ -81,6 +82,18 @@ const ReportServices = {
         if (data.statusCode !== 200 && data.statusCode !== 201) {
             throw new Error(data.message);
         }
+        return data;
+    },
+
+    ticketPending: async (
+        payload: { ticketId: string; reason: string }
+    ): Promise<CommonResponse<string>> => {
+        const { data } = await axiosInstance.post(`${baseURL}/pending`, payload);
+
+        if (data.statusCode !== 200 && data.statusCode !== 201) {
+            throw new Error(data.message || "Pending ticket gagal");
+        }
+
         return data;
     },
 

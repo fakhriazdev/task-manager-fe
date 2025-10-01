@@ -3,6 +3,7 @@ import TicketDetailDrawer from "@/app/dashboard/ticket/components/TicketDetailDr
 import {ConfirmDialog} from "@/components/shared/confirmDialog";
 import { RepairTransaction } from "@/lib/ticket/TicketTypes";
 import {useCompleteTicket, useRepairTransaction} from "@/lib/ticket/useTicketAction";
+import ConfirmPendingTicket from "@/app/dashboard/ticket/components/ConfirmPendingTicket";
 
 export default function TicketDialogs() {
     const { open, setOpen, currentRow, setCurrentRow } = useTicketStore()
@@ -111,6 +112,10 @@ export default function TicketDialogs() {
                             </>
                         }
                         confirmText={completeMutation.isPending ? "Loading..." : "Complete"}
+                    />
+                    <ConfirmPendingTicket
+                        open={open === "pending"}
+                        onOpenChange={(isOpen:boolean) => setOpen(isOpen ? "pending" : null)}
                     />
 
                 </>

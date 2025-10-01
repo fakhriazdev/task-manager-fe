@@ -3,10 +3,16 @@ import { Badge } from "@/components/ui/badge"
 import * as React from "react"
 import { EStatus, TicketList } from "@/lib/ticket/TicketTypes"
 import Link from "next/link"
-import { Check, Clock } from "lucide-react"
+import { Check, Clock,BadgeAlert } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 import DataTableRowAction from "@/app/dashboard/ticket/components/TicketTableRowActions";
 import {HandlerPicker} from "@/app/dashboard/ticket/components/HandlerPicker";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 // ---- Date range filter ----
 type DateRange = { from?: string | Date | null; to?: string | Date | null }
@@ -68,6 +74,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
             accessorKey: "createdAt",
             header: () => <div className="min-w-40">Created At</div>,
             filterFn: dateRangeFilter,
+            enableSorting: true,
             cell: ({row}) => (
                 <div className="text-start text-primary text-sm">
                     {formatDateTime(row.original.createdAt)}
@@ -127,6 +134,16 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
                 );
             },
         },
+        {
+            accessorKey: "idtv",
+            header: () => <div className="min-w-28">ID Team Viewer</div>,
+            cell: ({ row }) => (
+                <div className="text-primary font-semibold text-sm">
+                    {row.original.idtv ?? "-"}
+                </div>
+            ),
+        },
+
 
 
         {
@@ -176,6 +193,12 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
                         style = "text-blue-600 border-blue-600 bg-blue-50"
                         icon = <Clock className="h-3 w-3"/>
                         break
+                    case EStatus.PENDING:
+                        label = "Pending"
+                        style = "text-yellow-600 border-yellow-600 bg-yellow-50"
+                        icon = <BadgeAlert className="h-3 w-3"/>
+
+                        break
                     case EStatus.FAILED:
                         label = "Failed"
                         style = "text-red-600 border-red-600 bg-red-50"
@@ -196,6 +219,29 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
                         {icon}
                         {label}
                     </Badge>
+                )
+            },
+        },
+        {
+            accessorKey: "reason",
+            header: () => <div className="min-w-40">Reason</div>, // ⬅️ perbaiki label
+            cell: ({ row }) => {
+                const reason = row.original?.reason
+                return reason ? (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                <span className="text-primary font-semibold text-xs cursor-default line-clamp-1">
+                  {reason}
+                </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                                <p className="whitespace-pre-wrap">{reason}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                ) : (
+                    <span className="text-muted-foreground text-xs">-</span>
                 )
             },
         },
