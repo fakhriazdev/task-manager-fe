@@ -94,7 +94,9 @@ export function DataTableTicket<TData>({
                                        }: DataTableProps<TData>) {
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultColumnVisibility)
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [sorting, setSorting] = React.useState<SortingState>([
+        { id: "createdAt", desc: true }, // ASC
+    ])
     const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 20 })
 
     const table = useReactTable({

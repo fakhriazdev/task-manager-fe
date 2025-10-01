@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import * as React from "react"
 import { EStatus, TicketList } from "@/lib/ticket/TicketTypes"
 import Link from "next/link"
-import { Check, Clock,BadgeAlert } from "lucide-react"
+import { Check, Clock,BadgeAlert ,ArrowUpDown} from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 import DataTableRowAction from "@/app/dashboard/ticket/components/TicketTableRowActions";
 import {HandlerPicker} from "@/app/dashboard/ticket/components/HandlerPicker";
@@ -13,6 +13,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {Row} from "@tanstack/table-core";
 
 // ---- Date range filter ----
 type DateRange = { from?: string | Date | null; to?: string | Date | null }
@@ -48,6 +49,20 @@ export const multiSelectFilter: FilterFn<TicketList> = (row, columnId, filterVal
     return values.includes(String(v))
 }
 
+const dateSortingFn = (
+    rowA: Row<TicketList>,
+    rowB: Row<TicketList>,
+    columnId: string
+) => {
+    const a = rowA.getValue(columnId)
+    const b = rowB.getValue(columnId)
+
+    const ta = a ? new Date(a as string).getTime() : 0
+    const tb = b ? new Date(b as string).getTime() : 0
+
+    return ta - tb
+}
+
 export function ticketColumns({ enableHandler }: { enableHandler: boolean }): ColumnDef<TicketList>[] {
     return [
         {
@@ -72,8 +87,22 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
         },
         {
             accessorKey: "createdAt",
-            header: () => <div className="min-w-40">Created At</div>,
+            header: ({ column }) => (
+                <div className="flex w-full justify-between">
+                    <div>
+                        Created At
+                    </div>
+                    <button
+                        className="inline-flex items-center gap-1 font-medium hover:opacity-80"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        title="Sort by Created At"
+                    >
+                        <ArrowUpDown className="h-4 w-4" />
+                    </button>
+                </div>
+            ),
             filterFn: dateRangeFilter,
+            sortingFn: dateSortingFn,
             enableSorting: true,
             cell: ({row}) => (
                 <div className="text-start text-primary text-sm">
