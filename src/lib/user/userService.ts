@@ -38,7 +38,8 @@ const StoreService = {
     },
 
     updatePassword: async (req:UpdatePassword): Promise<CommonResponse<string>> => {
-        const { data } = await axiosInstance.patch(`${baseURL}/change-password/${req.nik}`);
+        const{nik,currentPassword,newPassword} = req
+        const { data } = await axiosInstance.patch(`${baseURL}/change-password/${nik}`,{currentPassword,newPassword});
         if (data.statusCode !== 200 && data.statusCode !== 202) {
             throw new Error(data.message);
         }

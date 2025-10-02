@@ -1,9 +1,10 @@
 import {useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
-import {User, CommonResponse, NewUser} from "@/lib/user/userType";
+import {User, CommonResponse, NewUser, UpdatePassword} from "@/lib/user/userType";
 import UserService from "@/lib/user/userService";
 import {UserUpdate} from "@/app/dashboard/members/schemas/schemas";
 import {toast} from "sonner";
 import userService from "@/lib/user/userService";
+import {useRouter} from "next/navigation";
 
 
 
@@ -49,13 +50,15 @@ export function useUpdateUser(): UseMutationResult<CommonResponse<string>, Error
     });
 }
 
-export function useResetPasswordUser(): UseMutationResult<CommonResponse<string>, Error, { nik: string }> {
+export function useChangePasswordUser(): UseMutationResult<CommonResponse<string>, Error, UpdatePassword> {
+    const router = useRouter();
     return useMutation({
-        mutationFn: async ({ nik }) => {
-            return await userService.resetPassword(nik);
+        mutationFn: async ({ nik,currentPassword,newPassword }) => {
+            return await userService.updatePassword({nik,currentPassword,newPassword});
         },
         onSuccess: () => {
-            toast.success("Reset Password User Successfully!")
+            toast.success("Change Password Successfully!")
+            router.push("login");
         },
         onError: (error) => {
             toast.error(`${error.message}`)
