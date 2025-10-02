@@ -84,7 +84,7 @@ export default function ConfirmPendingTicket({ open, onOpenChange }: Props) {
                     }
                 }}
             >
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md dark:bg-secondary">
                     <DialogHeader>
                         <DialogTitle>Pending this ticket: {currentRow?.id}?</DialogTitle>
                         <DialogDescription>
@@ -119,11 +119,11 @@ export default function ConfirmPendingTicket({ open, onOpenChange }: Props) {
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="contoh: menunggu konfirmasi kasir soal IDTV tidak aktif..."
-                                maxLength={200}
+                                maxLength={80}
                                 className="min-h-24"
                             />
                             <div className="flex items-center justify-end text-xs">
-                                <span className="text-muted-foreground">{values.reason.length}/200</span>
+                                <span className="text-muted-foreground">{values.reason.length}/80</span>
                             </div>
                         </div>
 
@@ -149,6 +149,7 @@ export default function ConfirmPendingTicket({ open, onOpenChange }: Props) {
 
             {/* 2) CONFIRM DIALOG */}
             <ConfirmDialog
+                className="bg-secondary"
                 destructive
                 open={showConfirm}
                 onOpenChange={(isOpen: boolean) => setShowConfirm(isOpen)}
