@@ -156,9 +156,13 @@ export default function TicketDetailDrawer({
                                 <InfoItem label="Category" value={currentRow.category} />
                                 <InfoItem label="No. Telepon" value={currentRow.noTelp} />
                                 <InfoItem label="Description" value={currentRow.description} full />
-                                <InfoItem label="BillCode" value={currentRow.billCode} full />
-                                <InfoItem label="Pembayaran Saat ini" value={getPaymentLabel(currentRow.fromPayment)} />
-                                <InfoItem label="Seharusnya ke" value={getPaymentLabel(currentRow.toPayment)} />
+                                {currentRow?.category === "Transaksi" && (
+                                    <>
+                                        <InfoItem label="BillCode" value={currentRow.billCode} full />
+                                        <InfoItem label="Pembayaran Saat ini" value={getPaymentLabel(currentRow.fromPayment)} />
+                                        <InfoItem label="Seharusnya ke" value={getPaymentLabel(currentRow.toPayment)} />
+                                    </>
+                                )}
                                 <InfoItem
                                     label="Completed At"
                                     value={
@@ -223,6 +227,7 @@ export default function TicketDetailDrawer({
                     </SheetClose>
                 </SheetFooter>
             </SheetContent>
+
 
             {/* 🔎 Lightbox Dialog */}
             {images.length > 0 && (
