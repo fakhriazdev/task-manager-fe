@@ -50,6 +50,20 @@ export function useUpdateUser(): UseMutationResult<CommonResponse<string>, Error
     });
 }
 
+export function useResetPasswordUser(): UseMutationResult<CommonResponse<string>, Error, { nik: string }> {
+    return useMutation({
+        mutationFn: async ({ nik }) => {
+            return await userService.resetPassword(nik);
+        },
+        onSuccess: () => {
+            toast.success("Reset Password User Successfully!")
+        },
+        onError: (error) => {
+            toast.error(`${error.message}`)
+        },
+    });
+}
+
 export function useChangePasswordUser(): UseMutationResult<CommonResponse<string>, Error, UpdatePassword> {
     const router = useRouter();
     return useMutation({
