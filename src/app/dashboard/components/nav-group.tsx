@@ -3,24 +3,22 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight } from "lucide-react"
-
+import { ChevronRight, Plus } from "lucide-react"
 import {
     Collapsible,
-    CollapsibleContent,
     CollapsibleTrigger,
+    CollapsibleContent,
 } from "@/components/ui/collapsible"
 import {
     SidebarGroup,
     SidebarMenu,
-    SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuButton,
     SidebarMenuSub,
-    SidebarMenuSubButton,
     SidebarMenuSubItem,
+    SidebarMenuSubButton,
     useSidebar,
 } from "@/components/ui/sidebar"
-import { Badge } from "@/components/ui/badge"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,57 +27,55 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
 
-// 🔹 Types
 export type NavItem = {
     title: string
     url?: string
     icon?: React.ComponentType<{ className?: string }>
-    badge?: string | number
     color?: string
+    badge?: string | number
     items?: NavItem[]
-}
-
-export type NavCollapsible = NavItem & {
-    items: NavItem[]
-}
-
-export type NavLink = NavItem & {
-    url: string
-    items?: never
 }
 
 export type NavGroupProps = {
     title: string
-    items: (NavCollapsible | NavLink)[]
+    items: NavItem[]
+    onAdd?: () => void
 }
 
-// 🔹 Main Component
-export function NavGroup({ items }: NavGroupProps) {
-    const { state, isMobile } = useSidebar()
+export function NavGroup({ items, onAdd }: NavGroupProps) {
     const pathname = usePathname()
+    const { state, isMobile } = useSidebar()
+    const isCollapsed = state === "collapsed"
 
     return (
         <SidebarGroup>
-            {/*<SidebarGroupLabel>{title}</SidebarGroupLabel>*/}
             <SidebarMenu>
                 {items.map((item) => {
-                    const key = `${item.title}-${item.url}`
+                    const key = `${item.title}-${item.url || item.items?.length}`
 
                     if (!item.items)
                         return <SidebarMenuLink key={key} item={item} pathname={pathname} />
 
-                    if (state === "collapsed" && !isMobile)
+                    if (isCollapsed && !isMobile)
                         return (
                             <SidebarMenuCollapsedDropdown
                                 key={key}
                                 item={item}
                                 pathname={pathname}
+                                onAdd={onAdd} // ✅ DITERUSKAN
                             />
                         )
 
                     return (
-                        <SidebarMenuCollapsible key={key} item={item} pathname={pathname} />
+                        <SidebarMenuCollapsible
+                            key={key}
+                            item={item}
+                            pathname={pathname}
+                            onAdd={onAdd} // ✅ DITERUSKAN
+                            isCollapsed={isCollapsed}
+                        />
                     )
                 })}
             </SidebarMenu>
@@ -87,92 +83,112 @@ export function NavGroup({ items }: NavGroupProps) {
     )
 }
 
-// 🔹 Badge helper
-function NavBadge({ children }: { children: React.ReactNode }) {
-    return <Badge className="rounded-full px-1 py-0 text-xs">{children}</Badge>
-}
-
-// 🔹 Single link
-function SidebarMenuLink({item, pathname,}: { item: NavLink, pathname: string }) {
-    const { setOpenMobile } = useSidebar()
+// =======================================================
+// 🔹 Sidebar Link
+// =======================================================
+function SidebarMenuLink({
+                             item,
+                             pathname,
+                         }: {
+    item: NavItem
+    pathname: string
+}) {
+    const isActive = pathname === item.url
     return (
         <SidebarMenuItem>
-            <SidebarMenuButton
-                asChild
-                isActive={checkIsActive(pathname, item)}
-                tooltip={item.title}
-            >
-                <Link href={item.url} onClick={() => setOpenMobile(false)}>
-                    {item.icon && <item.icon className="size-4 text-muted-foreground" />}
+            <SidebarMenuButton asChild isActive={isActive}>
+                <Link href={item.url || "#"} className="flex items-center gap-2">
                     {item.color && (
                         <span
-                            className="inline-block size-2.5 rounded-full mr-2"
+                            className="inline-block size-3 rounded-full"
                             style={{ backgroundColor: item.color }}
                         />
                     )}
+                    {item.icon && <item.icon className="size-4 text-muted-foreground" />}
                     <span>{item.title}</span>
-                    {item.badge && <NavBadge>{item.badge}</NavBadge>}
+                    {item.badge && (
+                        <Badge className="rounded-full px-1 py-0 text-xs">{item.badge}</Badge>
+                    )}
                 </Link>
             </SidebarMenuButton>
         </SidebarMenuItem>
     )
 }
 
-// 🔹 Collapsible Section
-function SidebarMenuCollapsible({item, pathname,}: { item: NavCollapsible, pathname: string }) {
-    const { setOpenMobile } = useSidebar()
+// =======================================================
+// 🔹 Collapsible (expanded mode)
+// =======================================================
+function SidebarMenuCollapsible({
+                                    item,
+                                    pathname,
+                                    onAdd,
+                                    isCollapsed,
+                                }: {
+    item: NavItem
+    pathname: string
+    onAdd?: () => void
+    isCollapsed: boolean
+}) {
+    const isActive = !!item.items?.some((i) => pathname.startsWith(i.url || ""))
 
     return (
         <Collapsible
             asChild
-            defaultOpen={checkIsActive(pathname, item, true)}
+            defaultOpen={isActive}
             className="group/collapsible"
         >
             <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                        tooltip={item.title}
-                        className="w-full justify-between text-muted-foreground"
-                    >
+                    <SidebarMenuButton className="w-full justify-between" isActive={isActive}>
                         <div className="flex items-center gap-2">
-                            {item.icon && (
-                                <item.icon className="size-4 text-muted-foreground" />
-                            )}
+                            {item.icon && <item.icon className="size-4 text-muted-foreground" />}
                             <span>{item.title}</span>
-                            {item.badge && <NavBadge>{item.badge}</NavBadge>}
+                            <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </div>
-                        <ChevronRight className="size-4 transition-transform duration-300 group-data-[state=open]/collapsible:rotate-90" />
+                        <div className="flex items-center gap-1">
+                            {/* ✅ Tombol + hanya tampil saat sidebar expanded */}
+                            {!isCollapsed && onAdd && (
+                                <div
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onAdd?.()
+                                    }}
+                                    onKeyDown={(e) => e.key === "Enter" && onAdd?.()}
+                                    className="cursor-pointer rounded-md p-1 hover:bg-accent transition bg-primary dark:bg-primary"
+                                >
+                                    <Plus className="size-3 font-bold text-secondary dark:text-secondary" />
+                                </div>
+                            )}
+
+                        </div>
                     </SidebarMenuButton>
                 </CollapsibleTrigger>
 
-                {/* Smooth animation */}
                 <CollapsibleContent
                     className="
-            overflow-hidden transition-all duration-400 ease-in-out
-            data-[state=closed]:max-h-0 data-[state=open]:max-h-[500px]
+            overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]
+            data-[state=closed]:max-h-0 data-[state=open]:max-h-[600px]
             data-[state=closed]:opacity-0 data-[state=open]:opacity-100
+            data-[state=open]:translate-y-0 data-[state=closed]:-translate-y-2
           "
                 >
-                    <SidebarMenuSub className="mt-1 space-y-1 pl-3">
-                        {item.items.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
+                    <SidebarMenuSub className="mt-1 space-y-1">
+                        {item.items?.map((sub) => (
+                            <SidebarMenuSubItem key={sub.title}>
                                 <SidebarMenuSubButton
                                     asChild
-                                    isActive={checkIsActive(pathname, subItem)}
+                                    isActive={pathname === sub.url}
                                 >
-                                    <Link
-                                        href={subItem.url ?? "#"}
-                                        onClick={() => setOpenMobile(false)}
-                                        className="flex items-center gap-2 text-[14px]"
-                                    >
-                                        {subItem.color && (
+                                    <Link href={sub.url || "#"} className="flex items-center gap-2 pl-2">
+                                        {sub.color && (
                                             <span
-                                                className="inline-block size-2.5 rounded-full"
-                                                style={{ backgroundColor: subItem.color }}
+                                                className="inline-block size-3 rounded-full"
+                                                style={{ backgroundColor: sub.color }}
                                             />
                                         )}
-                                        <span>{subItem.title}</span>
-                                        {subItem.badge && <NavBadge>{subItem.badge}</NavBadge>}
+                                        <span>{sub.title}</span>
                                     </Link>
                                 </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -184,64 +200,73 @@ function SidebarMenuCollapsible({item, pathname,}: { item: NavCollapsible, pathn
     )
 }
 
-// 🔹 Dropdown for collapsed sidebar
-function SidebarMenuCollapsedDropdown({item, pathname,}: { item: NavCollapsible, pathname: string }) {
+// =======================================================
+// 🔹 Collapsed Dropdown Mode
+// =======================================================
+function SidebarMenuCollapsedDropdown({
+                                          item,
+                                          pathname,
+                                          onAdd,
+                                      }: {
+    item: NavItem
+    pathname: string
+    onAdd?: () => void
+}) {
+    const isActive = !!item.items?.some((i) => pathname.startsWith(i.url || ""))
+
     return (
         <SidebarMenuItem>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <SidebarMenuButton
-                        tooltip={item.title}
-                        isActive={checkIsActive(pathname, item)}
-                    >
+                    <SidebarMenuButton isActive={isActive} tooltip={item.title}>
                         {item.icon && <item.icon className="size-4 text-muted-foreground" />}
                         <span>{item.title}</span>
-                        {item.badge && <NavBadge>{item.badge}</NavBadge>}
-                        <ChevronRight className="ms-auto size-4 transition-transform duration-200" />
+                        <ChevronRight className="ms-auto size-4 opacity-60" />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent side="right" align="start" sideOffset={4}>
-                    <DropdownMenuLabel>
-                        {item.title} {item.badge ? `(${item.badge})` : ""}
+                <DropdownMenuContent side="right" align="start" sideOffset={4}  className="min-w-[220px] w-[260px] rounded-md border bg-popover text-popover-foreground shadow-md">
+                    {/* ✅ Label + tombol plus (tanpa nested button) */}
+                    <DropdownMenuLabel className="flex items-center justify-between px-2">
+                        <span>{item.title}</span>
+                        {onAdd && (
+                            <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onAdd?.()
+                                }}
+                                onKeyDown={(e) => e.key === "Enter" && onAdd?.()}
+                                className="cursor-pointer rounded-md p-1 hover:bg-accent transition"
+                            >
+                                <Plus className="size-4 text-muted-foreground" />
+                            </div>
+                        )}
                     </DropdownMenuLabel>
+
                     <DropdownMenuSeparator />
-                    {item.items.map((sub) => (
-                        <DropdownMenuItem key={`${sub.title}-${sub.url}`} asChild>
+
+                    {item.items?.map((sub) => (
+                        <DropdownMenuItem key={sub.title} asChild>
                             <Link
-                                href={sub.url ?? "#"}
-                                className={`flex w-full items-center gap-2 ${
-                                    checkIsActive(pathname, sub) ? "bg-secondary" : ""
+                                href={sub.url || "#"}
+                                className={`flex items-center gap-2 ${
+                                    pathname === sub.url ? "bg-accent" : ""
                                 }`}
                             >
                                 {sub.color && (
                                     <span
-                                        className="inline-block size-2.5 rounded-full"
+                                        className="inline-block size-3 rounded-full"
                                         style={{ backgroundColor: sub.color }}
                                     />
                                 )}
-                                <span className="max-w-52 text-wrap">{sub.title}</span>
-                                {sub.badge && (
-                                    <span className="ms-auto text-xs">{sub.badge}</span>
-                                )}
+                                <span>{sub.title}</span>
                             </Link>
                         </DropdownMenuItem>
                     ))}
                 </DropdownMenuContent>
             </DropdownMenu>
         </SidebarMenuItem>
-    )
-}
-
-// 🔹 Active check helper
-function checkIsActive(href: string, item: NavItem, mainNav = false) {
-    if (!item.url) return false
-    return (
-        href === item.url ||
-        href.split("?")[0] === item.url ||
-        !!item?.items?.some((i) => href.startsWith(i.url ?? "")) ||
-        (mainNav &&
-            href.split("/")[1] !== "" &&
-            href.split("/")[1] === item?.url?.split("/")[1])
     )
 }

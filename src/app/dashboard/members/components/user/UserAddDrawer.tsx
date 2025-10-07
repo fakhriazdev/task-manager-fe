@@ -66,6 +66,9 @@ export default function UserAddDrawer({ open, onOpenChange }: Props) {
             case 'ADMIN':
                 setRoleField({ fieldStores: false, fieldRegion: false, fieldHandleWeb: true });
                 break
+            case 'STAFF':
+                setRoleField({ fieldStores: false, fieldRegion: false, fieldHandleWeb: true });
+                break
             case 'SC':
             case 'SPV':
             case 'SPVJ':

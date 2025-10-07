@@ -114,6 +114,22 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
                                         <InfoItem label="BillCode" value={currentRow.billCode} full />
                                         <InfoItem label="Pembayaran Saat ini" value={getPaymentLabel(currentRow.fromPayment)} />
                                         <InfoItem label="Seharusnya ke" value={getPaymentLabel(currentRow.toPayment)} />
+                                        <InfoItem
+                                            label="DirectSelling?"
+                                            value={
+                                                <Badge
+                                                    variant="outline"
+                                                    className={
+                                                        currentRow.isDirectSelling
+                                                            ? "border-green-500 text-green-600 bg-green-50"
+                                                            : "border-red-500 text-red-600 bg-red-50"
+                                                    }
+                                                >
+                                                    {currentRow.isDirectSelling ? "Ya" : "Tidak"}
+                                                </Badge>
+                                            }
+                                            full
+                                        />
                                     </>
                                 )}
                                 <InfoItem label="Completed At" value={currentRow.completedAt ? formatDateTime(currentRow.completedAt) : '-'} />
@@ -441,11 +457,21 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
 }
 
 /* ---------- Small pieces ---------- */
-function InfoItem({ label, value, full = false }: { label: string; value: string | null | undefined; full?: boolean }) {
+function InfoItem({
+                      label,
+                      value,
+                      full = false,
+                  }: {
+    label: string
+    value: React.ReactNode
+    full?: boolean
+}) {
     return (
         <div className={full ? 'col-span-2' : ''}>
             <label className="text-xs font-medium text-muted-foreground block mb-1">{label}</label>
-            <p className="text-sm text-primary bg-muted/40 rounded px-3 py-2 border w-full max-w-full">{value || '-'}</p>
+            <div className="text-sm text-primary bg-muted/40 rounded px-3 py-2 border w-full max-w-full">
+                {value ?? '-'}
+            </div>
         </div>
     )
 }

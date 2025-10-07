@@ -20,14 +20,16 @@ import { useSidebar } from "@/components/ui/sidebar"
 import { useAuthStore } from "@/lib/stores/useAuthStore"
 import { useQueryClient } from "@tanstack/react-query"
 import AuthService from "@/lib/auth/authService"
-import { NavGroup } from "./nav-group" // ✅ Import NavGroup
+import { NavGroup } from "./nav-group"
+import { useNavStore } from "@/lib/stores/useNavStore"
+import { NavDialog } from "./nav-dialog"
 
 const NavUser = React.lazy(() => import("./nav-user"))
 
 type RoleId = "SUPER" | "ADMIN" | string
 
 // ======================
-// 🔸 Combined Sidebar Data
+// 🔸 Sidebar Data
 // ======================
 const sidebarData = {
     navGroups: [
@@ -43,7 +45,7 @@ const sidebarData = {
             title: "Projects",
             items: [
                 {
-                    title: "PROJECTS",
+                    title: "Projects",
                     items: [
                         { title: "ACCOUNTING", color: "#FFA573", url: "/dashboard/projects/accounting" },
                         { title: "AMS WEB", color: "#EBA1E7", url: "/dashboard/projects/ams-web" },
@@ -67,8 +69,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const setUser = useAuthStore((state) => state.setUser)
     const { state } = useSidebar()
     const isCollapsed = state === "collapsed"
+    const { setOpen } = useNavStore()
 
-    // 🔹 Fetch user info jika belum ada
+    // 🔹 Fetch user data
     React.useEffect(() => {
         if (user && isAuthenticated) return
         queryClient
@@ -86,62 +89,67 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             .catch((err) => console.error("Failed to fetch user info:", err))
     }, [user, isAuthenticated, queryClient, setUser])
 
-    // 🔹 Role-based filtering (tanpa null)
+    // 🔹 Role-based filtering
     const filteredSidebarData = React.useMemo(() => {
         const roleId = (user?.roleId as RoleId) || ""
         return {
             ...sidebarData,
             navGroups: sidebarData.navGroups.map((group) => ({
                 ...group,
-                items: group.items
-                    .map((item) => {
-                        // jika item punya children (NavCollapsible)
-                        if ("items" in item && Array.isArray(item.items)) {
-                            return {
-                                ...item,
-                                items:
-                                    roleId === "ADMIN"
-                                        ? item.items.filter((i) => i.title !== "Members")
-                                        : item.items,
-                            }
-                        }
-                        // jika item langsung (NavLink)
-                        return item
-                    })
-                    .filter((i) => !(roleId === "ADMIN" && i.title === "Members")),
+                items:
+                    roleId === "ADMIN"
+                        ? group.items.filter((i) => i.title !== "Members")
+                        : group.items,
             })),
         }
     }, [user?.roleId])
 
+    // ======================
+    // 🔹 Render Sidebar
+    // ======================
     return (
-        <Sidebar collapsible="icon" {...props}>
-            {/* ========== HEADER ========== */}
-            <SidebarHeader className="px-3 py-3 border-b">
-                {!isCollapsed && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-start rounded-full text-sm font-medium"
-                        onClick={() => alert("Create clicked!")}
-                    >
-                        <Plus className="mr-2 size-4 text-red-500" /> Create
-                    </Button>
-                )}
-            </SidebarHeader>
+        <>
+            <Sidebar collapsible="icon" {...props}>
+                {/* HEADER */}
+                <SidebarHeader className="px-3 py-3 border-b">
+                    {!isCollapsed && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-start rounded-full text-sm font-medium"
+                            onClick={() => alert("Create clicked!")}
+                        >
+                            <Plus className="mr-2 size-4 text-red-500" /> Create
+                        </Button>
+                    )}
+                </SidebarHeader>
 
-            {/* ========== CONTENT ========== */}
-            <SidebarContent>
-                {filteredSidebarData.navGroups.map((group) => (
-                    <NavGroup key={group.title} {...group} />
-                ))}
-            </SidebarContent>
+                {/* CONTENT */}
+                <SidebarContent>
+                    {filteredSidebarData.navGroups.map((group) => (
+                        <NavGroup
+                            key={group.title}
+                            title={group.title}
+                            items={group.items}
+                            onAdd={
+                                group.title === "Projects"
+                                    ? () => setOpen("projects")
+                                    : undefined
+                            }
+                        />
+                    ))}
+                </SidebarContent>
 
-            {/* ========== FOOTER ========== */}
-            <SidebarFooter>
-                <React.Suspense fallback={<div className="h-10" />}>
-                    <NavUser user={user} />
-                </React.Suspense>
-            </SidebarFooter>
-        </Sidebar>
+                {/* FOOTER */}
+                <SidebarFooter>
+                    <React.Suspense fallback={<div className="h-10" />}>
+                        <NavUser user={user} />
+                    </React.Suspense>
+                </SidebarFooter>
+            </Sidebar>
+
+            {/* 🔹 Centralized Modal */}
+            <NavDialog />
+        </>
     )
 }
