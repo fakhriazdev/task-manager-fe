@@ -63,18 +63,30 @@ export function useAddTicket(): UseMutationResult<{ ticketId: string; callbackUr
             queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "active" });
             // toast.success("Add Ticket Successfully!");
             toast.dismiss();
-            toast.success("Ticket berhasil dibuat!,Silahkan Check List Ticket",{
-                duration: 20000,
-            });
+            toast.success(
+                "Ticket berhasil dibuat!",
+
+                {
+                    toasterId: 'middle',
+                    description:"Silahkan Check List Ticket",
+                    duration: 20000,
+                }
+            );
             if (res.callbackUrl != null) {
                 router.push(res.callbackUrl);
             }
         },
         onError: () => {
             toast.dismiss();
-            toast.error("Gagal Membuat Ticket, Silahkan Coba kembali.", {
-                duration: 20000,
-            });
+            toast.error(
+                "Gagal Membuat Ticket",
+
+                {
+                    toasterId: 'middle',
+                    description: "Silahkan Coba kembali",
+                    duration: 20000,
+                }
+            );
         },
     });
 }

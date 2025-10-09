@@ -17,7 +17,11 @@ export default function RootLayout({
     <body>
     <ReactQueryProvider>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Toaster position={"top-center"}/>
+          <Toaster richColors position={"top-center"}/>
+          <Toaster id="middle" richColors
+              position="top-left"
+              className="!top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2 !transform"
+          />
             {children}
         </ThemeProvider>
     </ReactQueryProvider>
