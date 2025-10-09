@@ -4,29 +4,14 @@ import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-
 import { TicketList, EStatus, getPaymentLabel } from '@/lib/ticket/TicketTypes'
 import { formatDateTime } from '@/lib/utils'
-
-import {
-    Check,
-    Clock,
-    XCircle,
-    ChevronLeft,
-    ChevronRight,
-    Download,
-    X,
-    ZoomIn,
-    ZoomOut,
-    RefreshCw,
-} from 'lucide-react'
-
+import {Check, Clock, XCircle, ChevronLeft, ChevronRight, Download, X, ZoomIn, ZoomOut, RefreshCw,} from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
 
 /** Utils & constants for zoom **/
@@ -457,15 +442,7 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
 }
 
 /* ---------- Small pieces ---------- */
-function InfoItem({
-                      label,
-                      value,
-                      full = false,
-                  }: {
-    label: string
-    value: React.ReactNode
-    full?: boolean
-}) {
+function InfoItem({label, value, full = false,}: { label: string, value: React.ReactNode, full?: boolean }) {
     return (
         <div className={full ? 'col-span-2' : ''}>
             <label className="text-xs font-medium text-muted-foreground block mb-1">{label}</label>
