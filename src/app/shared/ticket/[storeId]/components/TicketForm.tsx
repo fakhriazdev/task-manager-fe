@@ -94,11 +94,12 @@ export default function TicketForm() {
                         enableReinitialize
                         initialValues={initialValues}
                         validationSchema={validationSchema}
-                        onSubmit={async (values:TicketForm,actions) => {
+                        onSubmit={async (values: TicketForm, actions) => {
                             if (selectedImages.length === 0) {
                                 setUploadError('Please upload at least one image.');
                                 return;
                             }
+
                             const dt = new DataTransfer();
                             selectedImages.forEach((f) => dt.items.add(f));
 
@@ -106,15 +107,21 @@ export default function TicketForm() {
                                 ...values,
                                 idStore: safeStoreId || values.idStore,
                                 images: dt.files,
-
                             };
+
                             await addTicket.mutateAsync({
                                 payload,
                                 // callbackUrl: `https://web.amscorp.id:3060/module/support/TicketList.aspx?str=${values.idStore}`
                             });
+
+                            // ✅ Reset form
                             actions.resetForm();
                             setUploadError('');
+
+                            // ✅ Reset file state di useImageUpload
+                            handleReset(actions.setFieldValue);
                         }}
+
                     >
                         {(formik) => {
                             const { values, setFieldValue, isValid, dirty } = formik;

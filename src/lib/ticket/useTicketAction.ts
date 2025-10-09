@@ -68,7 +68,7 @@ export function useAddTicket(): UseMutationResult<{ ticketId: string; callbackUr
 
                 {
                     toasterId: 'middle',
-                    description:"Silahkan Check List Ticket",
+                    description:"Silahkan Check Ticket anda di List Ticket",
                     duration: 20000,
                 }
             );
