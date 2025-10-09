@@ -61,13 +61,20 @@ export function useAddTicket(): UseMutationResult<{ ticketId: string; callbackUr
         onMutate: () => toast.loading("Creating Ticket..."),
         onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ["ticket"], refetchType: "active" });
-            toast.success("Add Ticket Successfully!");
+            // toast.success("Add Ticket Successfully!");
+            toast.dismiss();
+            toast.success("Ticket berhasil dibuat!,Silahkan Check List Ticket",{
+                duration: 20000,
+            });
             if (res.callbackUrl != null) {
                 router.push(res.callbackUrl);
             }
         },
-        onError: (error) => {
-            toast.error(error.message ?? "Failed to add ticket");
+        onError: () => {
+            toast.dismiss();
+            toast.error("Gagal Membuat Ticket, Silahkan Coba kembali.", {
+                duration: 20000,
+            });
         },
     });
 }

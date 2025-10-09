@@ -94,7 +94,7 @@ export default function TicketForm() {
                         enableReinitialize
                         initialValues={initialValues}
                         validationSchema={validationSchema}
-                        onSubmit={async (values:TicketForm) => {
+                        onSubmit={async (values:TicketForm,actions) => {
                             if (selectedImages.length === 0) {
                                 setUploadError('Please upload at least one image.');
                                 return;
@@ -108,8 +108,11 @@ export default function TicketForm() {
                                 images: dt.files,
 
                             };
-
-                            await addTicket.mutateAsync({payload, callbackUrl: `https://web.amscorp.id:3060/module/support/TicketList.aspx?str=${values.idStore}`});
+                            await addTicket.mutateAsync({
+                                payload,
+                                // callbackUrl: `https://web.amscorp.id:3060/module/support/TicketList.aspx?str=${values.idStore}`
+                            });
+                            actions.resetForm();
                             setUploadError('');
                         }}
                     >
