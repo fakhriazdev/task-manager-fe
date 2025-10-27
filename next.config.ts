@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [
+        {
+          key: 'Content-Security-Policy',
+          value: "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+        },
+      ],
+    },
+  ],
   trailingSlash: false,
   images: {
     remotePatterns: [
@@ -15,7 +26,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://project-management-mje5.onrender.com/api/:path*',
+        destination: 'http://localhost:1000/api/:path*',
       },
     ];
   },

@@ -41,7 +41,7 @@ export default function LoaderBar({ duration = 2000 }: { duration?: number }) {
     if (!visible) return null;
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-blue-100/30">
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-primary">
             <div
                 className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 transition-all ease-out relative overflow-hidden rounded-r-full"
                 style={{ width: `${progress}%`, transitionDuration: '300ms' }}

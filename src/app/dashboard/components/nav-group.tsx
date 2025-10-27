@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight, Plus } from "lucide-react"
+import { ChevronRight, Plus, Target } from "lucide-react"
 import {
     Collapsible,
     CollapsibleTrigger,
@@ -52,11 +52,18 @@ export function NavGroup({ items, onAdd }: NavGroupProps) {
     return (
         <SidebarGroup>
             <SidebarMenu>
-                {items.map((item) => {
-                    const key = `${item.title}-${item.url || item.items?.length}`
+                {items.map((item, i) => {
+                    // gunakan kombinasi index + title/url agar benar-benar unik
+                    const key = `${item.title}-${item.url ?? i}`
 
                     if (!item.items)
-                        return <SidebarMenuLink key={key} item={item} pathname={pathname} />
+                        return (
+                            <SidebarMenuLink
+                                key={key}
+                                item={item}
+                                pathname={pathname}
+                            />
+                        )
 
                     if (isCollapsed && !isMobile)
                         return (
@@ -64,7 +71,7 @@ export function NavGroup({ items, onAdd }: NavGroupProps) {
                                 key={key}
                                 item={item}
                                 pathname={pathname}
-                                onAdd={onAdd} // ✅ DITERUSKAN
+                                onAdd={onAdd}
                             />
                         )
 
@@ -73,7 +80,7 @@ export function NavGroup({ items, onAdd }: NavGroupProps) {
                             key={key}
                             item={item}
                             pathname={pathname}
-                            onAdd={onAdd} // ✅ DITERUSKAN
+                            onAdd={onAdd}
                             isCollapsed={isCollapsed}
                         />
                     )
@@ -95,7 +102,7 @@ function SidebarMenuLink({
 }) {
     const isActive = pathname === item.url
     return (
-        <SidebarMenuItem>
+        <SidebarMenuItem key={item.url ?? item.title}>
             <SidebarMenuButton asChild isActive={isActive}>
                 <Link href={item.url || "#"} className="flex items-center gap-2">
                     {item.color && (
@@ -132,21 +139,19 @@ function SidebarMenuCollapsible({
     const isActive = !!item.items?.some((i) => pathname.startsWith(i.url || ""))
 
     return (
-        <Collapsible
-            asChild
-            defaultOpen={isActive}
-            className="group/collapsible"
-        >
-            <SidebarMenuItem>
+        <Collapsible asChild defaultOpen={isActive} className="group/collapsible">
+            <SidebarMenuItem key={`collapsible-${item.title}`}>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="w-full justify-between" isActive={isActive}>
                         <div className="flex items-center gap-2">
                             {item.icon && <item.icon className="size-4 text-muted-foreground" />}
-                            <span>{item.title}</span>
+                            <span className="flex gap-2 items-center py-auto">
+                <Target className="size-4" />
+                                {item.title}
+              </span>
                             <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </div>
                         <div className="flex items-center gap-1">
-                            {/* ✅ Tombol + hanya tampil saat sidebar expanded */}
                             {!isCollapsed && onAdd && (
                                 <div
                                     role="button"
@@ -161,26 +166,20 @@ function SidebarMenuCollapsible({
                                     <Plus className="size-3 font-bold text-secondary dark:text-secondary" />
                                 </div>
                             )}
-
                         </div>
                     </SidebarMenuButton>
                 </CollapsibleTrigger>
 
                 <CollapsibleContent
-                    className="
-            overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]
-            data-[state=closed]:max-h-0 data-[state=open]:max-h-[600px]
-            data-[state=closed]:opacity-0 data-[state=open]:opacity-100
-            data-[state=open]:translate-y-0 data-[state=closed]:-translate-y-2
-          "
+                    className="overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]
+          data-[state=closed]:max-h-0 data-[state=open]:max-h-[600px]
+          data-[state=closed]:opacity-0 data-[state=open]:opacity-100
+          data-[state=open]:translate-y-0 data-[state=closed]:-translate-y-2"
                 >
                     <SidebarMenuSub className="mt-1 space-y-1">
-                        {item.items?.map((sub) => (
-                            <SidebarMenuSubItem key={sub.title}>
-                                <SidebarMenuSubButton
-                                    asChild
-                                    isActive={pathname === sub.url}
-                                >
+                        {item.items?.map((sub, j) => (
+                            <SidebarMenuSubItem key={`${sub.url ?? sub.title}-${j}`}>
+                                <SidebarMenuSubButton asChild isActive={pathname === sub.url}>
                                     <Link href={sub.url || "#"} className="flex items-center gap-2 pl-2">
                                         {sub.color && (
                                             <span
@@ -215,18 +214,22 @@ function SidebarMenuCollapsedDropdown({
     const isActive = !!item.items?.some((i) => pathname.startsWith(i.url || ""))
 
     return (
-        <SidebarMenuItem>
+        <SidebarMenuItem key={`dropdown-${item.title}`}>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <SidebarMenuButton isActive={isActive} tooltip={item.title}>
                         {item.icon && <item.icon className="size-4 text-muted-foreground" />}
-                        <span>{item.title}</span>
+                        <Target className="size-4" />
                         <ChevronRight className="ms-auto size-4 opacity-60" />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent side="right" align="start" sideOffset={4}  className="min-w-[220px] w-[260px] rounded-md border bg-popover text-popover-foreground shadow-md">
-                    {/* ✅ Label + tombol plus (tanpa nested button) */}
+                <DropdownMenuContent
+                    side="right"
+                    align="start"
+                    sideOffset={4}
+                    className="min-w-[220px] w-[260px] rounded-md border bg-popover text-popover-foreground shadow-md"
+                >
                     <DropdownMenuLabel className="flex items-center justify-between px-2">
                         <span>{item.title}</span>
                         {onAdd && (
@@ -247,8 +250,8 @@ function SidebarMenuCollapsedDropdown({
 
                     <DropdownMenuSeparator />
 
-                    {item.items?.map((sub) => (
-                        <DropdownMenuItem key={sub.title} asChild>
+                    {item.items?.map((sub, k) => (
+                        <DropdownMenuItem key={`${sub.url ?? sub.title}-${k}`} asChild>
                             <Link
                                 href={sub.url || "#"}
                                 className={`flex items-center gap-2 ${

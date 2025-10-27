@@ -131,10 +131,3 @@ export type RepairTransaction = {
         directSelling: boolean;
     };
 }
-
-// ---------- Common response ----------
-export interface CommonResponse<T> {
-    message: string;
-    statusCode: number;
-    data?: T;
-}

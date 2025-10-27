@@ -107,16 +107,21 @@ export const validationShape = {
         })
         .default(false),
 
-    billCode: STR()
+    billCode: Yup
+        .string()
+        .nullable()
+        .default(null)
         .when('category', {
-            is: 'Transaksi' as CategoryCode,
-            then: (s) =>
-                s.required('billCode wajib diisi untuk masalah transaksi')
-                    .length(12, 'billCode harus terdiri dari tepat 12 karakter'),
-            otherwise: (s) =>
-                s.length(12, 'billCode harus terdiri dari tepat 12 karakter'),
+            is: 'Transaksi',
+            then: (s) => s.required('billCode wajib diisi untuk masalah transaksi')
+                .length(12, 'BillCode harus terdiri dari tepat 12 karakter'),
         })
-        .default(null),
+        .when('category', {
+            is: 'Voucher',
+            then: (s) => s.required('voucher wajib diisi untuk masalah Voucher')
+                .length(12, 'Voucher harus terdiri dari tepat 12 karakter'),
+        }),
+
 
     grandTotal: STR()
         .when('category', {
@@ -131,7 +136,6 @@ export const validationShape = {
         })
         .default(null),
 
-    /** images: WAJIB (FileList, minimal 1 file) */
     images: Yup.mixed<FileList>()
         .test('not-empty', 'Minimal 1 gambar harus diunggah', (val) => {
             return val instanceof FileList && val.length > 0;

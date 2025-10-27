@@ -125,8 +125,8 @@ export default function TicketForm() {
                     >
                         {(formik) => {
                             const { values, setFieldValue, isValid, dirty } = formik;
-                            console.log(values,'values')
                             const isTransaksi = values.category === 'Transaksi';
+                            const isVoucherIssues = values.category === 'Voucher';
                             return (
                                 <Form className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -234,6 +234,31 @@ export default function TicketForm() {
                                         </Field>
                                     </div>
 
+                                    {/* Voucher Issues: show Voucher Code (still binds to billCode) */}
+                                    {isVoucherIssues && (
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Label>Voucher Code *</Label>
+                                                    <Field name="billCode">
+                                                        {({ field, meta }: FieldProps<string | null, TicketForm>) => (
+                                                            <>
+                                                                <Input
+                                                                    {...field}
+                                                                    value={field.value?.toUpperCase() ?? ''}
+                                                                    placeholder="Enter voucher code"
+                                                                    maxLength={20}
+                                                                />
+                                                                {meta.touched && meta.error && (
+                                                                    <p className="text-sm text-destructive">{meta.error}</p>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Field>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Description */}
                                     <div className="space-y-2">
@@ -255,6 +280,7 @@ export default function TicketForm() {
                                             )}
                                         </Field>
                                     </div>
+
 
                                     {/* Transaction fields grid 2 kolom */}
                                     {isTransaksi && (
@@ -340,7 +366,6 @@ export default function TicketForm() {
                                                         )}
                                                     </Field>
                                                 </div>
-
 
                                                 {/* Billcode */}
                                                 <div className="space-y-2">
@@ -457,7 +482,6 @@ export default function TicketForm() {
                                             )}
                                         </Field>
                                     </div>
-
 
                                     {/* Image Upload */}
                                     <div className="space-y-4">

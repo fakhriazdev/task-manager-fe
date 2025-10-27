@@ -19,11 +19,16 @@ export function useAuthActions() {
         onMutate: () => toast.loading("Logging in..."),
         onSuccess: async (res) => {
             toast.dismiss();
-            toast.success(res.message || "Login berhasil");
-            const userRes = await AuthService.userInfo();
-            setUser(userRes.data!);
-            queryClient.setQueryData(['user-info'], userRes.data);
-            router.push(res.callbackUrl || "/dashboard");
+            if(res.statusCode !== 500){
+                toast.success(res.message || "Login berhasil");
+                const userRes = await AuthService.userInfo();
+                setUser(userRes.data!);
+                queryClient.setQueryData(['user-info'], userRes.data);
+                router.push(res.callbackUrl || "/dashboard");
+                router.push("/dashboard");
+            }else {
+                toast.error(res.message);
+            }
         },
         onError: (err: Error) => {
             toast.dismiss();

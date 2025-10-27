@@ -39,7 +39,6 @@ export default function DataTableRowAction({ row }: DataTableRowActionsProps) {
                     onClick={() => {
                         setCurrentRow(ticket)
                         setOpen("detail")
-                        console.log("Row diset:", ticket)
                     }}
                 >
                     Detail

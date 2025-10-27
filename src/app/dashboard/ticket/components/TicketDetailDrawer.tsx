@@ -90,74 +90,106 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
                 <div className="flex flex-col gap-6 px-4 py-4 overflow-y-auto overflow-x-hidden">
                     {currentRow ? (
                         <>
-                            <div className="grid grid-cols-2 gap-y-4 gap-x-6 w-full max-w-full">
-                                <InfoItem label="Category" value={currentRow.category} />
-                                <InfoItem label="No. Telepon" value={currentRow.noTelp} />
-                                <InfoItem label="Description" value={currentRow.description} full />
-                                {currentRow?.category === 'Transaksi' && (
-                                    <>
-                                        <InfoItem label="BillCode" value={currentRow.billCode} full />
-                                        <InfoItem label="Pembayaran Saat ini" value={getPaymentLabel(currentRow.fromPayment)} />
-                                        <InfoItem label="Seharusnya ke" value={getPaymentLabel(currentRow.toPayment)} />
-                                        <InfoItem
-                                            label="DirectSelling?"
-                                            value={
-                                                <Badge
-                                                    variant="outline"
-                                                    className={
-                                                        currentRow.isDirectSelling
-                                                            ? "border-green-500 text-green-600 bg-green-50"
-                                                            : "border-red-500 text-red-600 bg-red-50"
-                                                    }
-                                                >
-                                                    {currentRow.isDirectSelling ? "Ya" : "Tidak"}
-                                                </Badge>
-                                            }
-                                            full
-                                        />
-                                    </>
-                                )}
-                                <InfoItem label="Completed At" value={currentRow.completedAt ? formatDateTime(currentRow.completedAt) : '-'} />
-                                <InfoItem label="Completed By" value={currentRow?.completedBy?.nama ?? '-'} />
-                                <InfoItem label="ID Team Viewer" value={currentRow.idtv} full />
-                            </div>
+                            {(() => {
+                                const cat = String(currentRow?.category ?? '').toLowerCase();
+                                const isTransaksi = cat === 'transaksi';
+                                const isVoucher = cat === 'voucher';
+                                const billLabel = isVoucher ? 'Voucher Code' : 'Bill Code';
 
-                            {/* Images Carousel */}
-                            {hasImages && (
-                                <div className="w-full max-w-full">
-                                    <h3 className="text-sm font-medium mb-2">Images</h3>
-                                    <Carousel orientation="horizontal" className="w-full max-w-lg mx-auto select-none">
-                                        <CarouselContent>
-                                            {images.map((img, i) => (
-                                                <CarouselItem key={img.id ?? i} className="flex justify-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openAt(i)}
-                                                        className="w-full flex justify-center focus:outline-none"
-                                                        aria-label={`Open image ${i + 1}`}
-                                                    >
-                                                        <Image
-                                                            src={img.url}
-                                                            height={600}
-                                                            width={600}
-                                                            alt={`ticket-${img.id ?? i}`}
-                                                            className="rounded-lg max-h-96 w-auto max-w-full object-contain border bg-white"
-                                                            draggable
-                                                        />
-                                                    </button>
-                                                </CarouselItem>
-                                            ))}
-                                        </CarouselContent>
-                                        <CarouselPrevious />
-                                        <CarouselNext />
-                                    </Carousel>
-                                </div>
-                            )}
+                                const directSelling = !!currentRow?.isDirectSelling; // handle null → false
+                                const paymentLabel = (v?: string | null) => (v ? getPaymentLabel(v) : '-');
+
+                                const hasImages = Array.isArray(images) && images.length > 0;
+
+                                return (
+                                    <>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 w-full max-w-full">
+                                            <InfoItem label="Category" value={currentRow.category ?? '-'} />
+                                            <InfoItem label="No. Telepon" value={currentRow.noTelp ?? '-'} />
+
+                                            <InfoItem label="Description" value={currentRow.description ?? '-'} full />
+
+                                            {(isTransaksi || isVoucher) && (
+                                                <InfoItem
+                                                    label={billLabel}
+                                                    value={currentRow?.billCode && currentRow.billCode.trim() !== '' ? currentRow.billCode : '-'}
+                                                    full
+                                                />
+                                            )}
+
+                                            {isTransaksi && (
+                                                <>
+                                                    <InfoItem label="Pembayaran Saat ini" value={paymentLabel(currentRow?.fromPayment)} />
+                                                    <InfoItem label="Seharusnya ke" value={paymentLabel(currentRow?.toPayment)} />
+
+                                                    {/** pastikan InfoItem.value = ReactNode (kalau belum, ubah tipenya) */}
+                                                    <InfoItem
+                                                        label="DirectSelling?"
+                                                        value={
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={
+                                                                    directSelling
+                                                                        ? 'border-green-500 text-green-600 bg-green-50'
+                                                                        : 'border-red-500 text-red-600 bg-red-50'
+                                                                }
+                                                            >
+                                                                {directSelling ? 'Ya' : 'Tidak'}
+                                                            </Badge>
+                                                        }
+                                                        full
+                                                    />
+                                                </>
+                                            )}
+
+                                            <InfoItem
+                                                label="Completed At"
+                                                value={currentRow.completedAt ? formatDateTime(currentRow.completedAt) : '-'}
+                                            />
+                                            <InfoItem label="Completed By" value={currentRow?.completedBy?.nama ?? '-'} />
+                                            <InfoItem label="ID Team Viewer" value={currentRow.idtv ?? '-'} full />
+                                        </div>
+
+                                        {/* Images Carousel */}
+                                        {hasImages && (
+                                            <div className="w-full max-w-full">
+                                                <h3 className="text-sm font-medium mb-2">Images</h3>
+                                                <Carousel orientation="horizontal" className="w-full max-w-lg mx-auto select-none">
+                                                    <CarouselContent>
+                                                        {images.map((img, i) => (
+                                                            <CarouselItem key={img.id ?? i} className="flex justify-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openAt(i)}
+                                                                    className="w-full flex justify-center focus:outline-none"
+                                                                    aria-label={`Open image ${i + 1}`}
+                                                                >
+                                                                    <Image
+                                                                        src={img.url}
+                                                                        height={600}
+                                                                        width={600}
+                                                                        alt={`ticket-${img.id ?? i}`}
+                                                                        className="rounded-lg max-h-96 w-auto max-w-full object-contain border bg-white"
+                                                                        draggable
+                                                                    />
+                                                                </button>
+                                                            </CarouselItem>
+                                                        ))}
+                                                    </CarouselContent>
+                                                    <CarouselPrevious />
+                                                    <CarouselNext />
+                                                </Carousel>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </>
                     ) : (
                         <div className="text-sm text-muted-foreground">No data</div>
                     )}
                 </div>
+
 
                 {/* Footer */}
                 <SheetFooter className="gap-2 mt-auto pt-4 border-t">

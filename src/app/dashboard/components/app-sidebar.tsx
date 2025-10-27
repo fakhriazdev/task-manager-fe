@@ -1,112 +1,90 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Plus } from "lucide-react"
-import {
-    IconDashboard,
-    IconTicket,
-    IconUsers,
-} from "@tabler/icons-react"
-
+import * as React from 'react'
+import { Plus } from 'lucide-react'
+import { IconDashboard, IconTicket, IconUsers } from '@tabler/icons-react'
 import {
     Sidebar,
     SidebarHeader,
     SidebarContent,
     SidebarFooter,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
+} from '@/components/ui/sidebar'
+import { Button } from '@/components/ui/button'
+import { useSidebar } from '@/components/ui/sidebar'
+import { useAuthStore } from '@/lib/stores/useAuthStore'
+import { useQueryClient } from '@tanstack/react-query'
+import AuthService from '@/lib/auth/authService'
+import { NavGroup } from './nav-group'
+import { useNavStore } from '@/lib/stores/useNavStore'
+import { NavDialog } from './nav-dialog'
+import {useProjectAction} from "@/lib/project/projectAction";
 
-import { useSidebar } from "@/components/ui/sidebar"
-import { useAuthStore } from "@/lib/stores/useAuthStore"
-import { useQueryClient } from "@tanstack/react-query"
-import AuthService from "@/lib/auth/authService"
-import { NavGroup } from "./nav-group"
-import { useNavStore } from "@/lib/stores/useNavStore"
-import { NavDialog } from "./nav-dialog"
+const NavUser = React.lazy(() => import('./nav-user'))
 
-const NavUser = React.lazy(() => import("./nav-user"))
-
-type RoleId = "SUPER" | "ADMIN" | string
-
-// ======================
-// 🔸 Sidebar Data
-// ======================
-const sidebarData = {
-    navGroups: [
-        {
-            title: "Main",
-            items: [
-                { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
-                { title: "Ticket", url: "/dashboard/ticket", icon: IconTicket },
-                { title: "Members", url: "/dashboard/members", icon: IconUsers },
-            ],
-        },
-        {
-            title: "Projects",
-            items: [
-                {
-                    title: "Projects",
-                    items: [
-                        { title: "ACCOUNTING", color: "#FFA573", url: "/dashboard/projects/accounting" },
-                        { title: "AMS WEB", color: "#EBA1E7", url: "/dashboard/projects/ams-web" },
-                        { title: "APPROVAL", color: "#B99FFF", url: "/dashboard/projects/approval" },
-                        { title: "BUDGETING", color: "#7EA9E3", url: "/dashboard/projects/budgeting" },
-                        { title: "GENERAL AFFAIR", color: "#A4E37E", url: "/dashboard/projects/general-affair" },
-                        { title: "MEMBERSHIP", color: "#E37E7E", url: "/dashboard/projects/membership" },
-                        { title: "ONLINE SHOP", color: "#A37EE3", url: "/dashboard/projects/online-shop" },
-                        { title: "POS", color: "#7EA9E3", url: "/dashboard/projects/pos" },
-                        { title: "REALTIME STOCK", color: "#E3C67E", url: "/dashboard/projects/realtime-stock" },
-                    ],
-                },
-            ],
-        },
-    ],
-}
+type RoleId = 'SUPER' | 'ADMIN' | string
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const queryClient = useQueryClient()
     const { user, isAuthenticated } = useAuthStore()
     const setUser = useAuthStore((state) => state.setUser)
     const { state } = useSidebar()
-    const isCollapsed = state === "collapsed"
+    const isCollapsed = state === 'collapsed'
     const { setOpen } = useNavStore()
 
-    // 🔹 Fetch user data
+    // 🔹 Fetch user info (once)
     React.useEffect(() => {
         if (user && isAuthenticated) return
         queryClient
             .fetchQuery({
-                queryKey: ["user-info"],
+                queryKey: ['user-info'],
                 queryFn: AuthService.userInfo,
             })
             .then((res) => {
                 const data = res.data
                 if (data) {
                     setUser(data)
-                    queryClient.setQueryData(["user-info"], data)
+                    queryClient.setQueryData(['user-info'], data)
                 }
             })
-            .catch((err) => console.error("Failed to fetch user info:", err))
+            .catch((err) => console.error('Failed to fetch user info:', err))
     }, [user, isAuthenticated, queryClient, setUser])
 
-    // 🔹 Role-based filtering
-    const filteredSidebarData = React.useMemo(() => {
-        const roleId = (user?.roleId as RoleId) || ""
-        return {
-            ...sidebarData,
-            navGroups: sidebarData.navGroups.map((group) => ({
-                ...group,
-                items:
-                    roleId === "ADMIN"
-                        ? group.items.filter((i) => i.title !== "Members")
-                        : group.items,
-            })),
-        }
-    }, [user?.roleId])
+    // 🔹 Ambil project list dari React Query
+    const { data: projects = [], isLoading, refetch } = useProjectAction()
 
-    // ======================
-    // 🔹 Render Sidebar
-    // ======================
+    // 🔹 Role-based filter
+    const filteredSidebarData = React.useMemo(() => {
+        const roleId = (user?.roleId as RoleId) || ''
+
+        const navGroups = [
+            {
+                title: 'Main',
+                items: [
+                    { title: 'Dashboard', url: '/dashboard', icon: IconDashboard },
+                    { title: 'Ticket', url: '/dashboard/ticket', icon: IconTicket },
+                    { title: 'Members', url: '/dashboard/members', icon: IconUsers },
+                ].filter((i) => !(roleId === 'ADMIN' && i.title === 'Members')),
+            },
+            {
+                title: 'Projects',
+                items: [
+                    {
+                        title: 'Projects',
+                        items: isLoading
+                            ? [] // sementara kosong
+                            : projects.map((p) => ({
+                                title: p.name,
+                                color: p.color,
+                                url: `/dashboard/projects/${p.id}`,
+                            })),
+                    },
+                ],
+            },
+        ]
+
+        return { navGroups }
+    }, [user?.roleId, projects, isLoading])
+
     return (
         <>
             <Sidebar collapsible="icon" {...props}>
@@ -117,9 +95,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             variant="outline"
                             size="sm"
                             className="w-full justify-start rounded-full text-sm font-medium"
-                            onClick={() => alert("Create clicked!")}
+                            onClick={() => refetch()} // refresh project list
                         >
-                            <Plus className="mr-2 size-4 text-red-500" /> Create
+                            <Plus className="mr-2 size-4 text-red-500" /> Refresh
                         </Button>
                     )}
                 </SidebarHeader>
@@ -132,9 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             title={group.title}
                             items={group.items}
                             onAdd={
-                                group.title === "Projects"
-                                    ? () => setOpen("projects")
-                                    : undefined
+                                group.title === 'Projects' ? () => setOpen('projects') : undefined
                             }
                         />
                     ))}
