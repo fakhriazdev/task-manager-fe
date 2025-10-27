@@ -137,7 +137,6 @@ export const TaskRow = memo(
             useSortable({ id: task.id, disabled: !!disableDrag });
 
         // ✅ Ambil state & actions via selector
-        const currentRowId = useProjectStore((s) => s.currentRowId);
         const setOpen = useProjectStore((s) => s.setOpen);
         const setCurrentRow = useProjectStore((s) => s.setCurrentRow);
 
