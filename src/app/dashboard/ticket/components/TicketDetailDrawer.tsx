@@ -4,15 +4,25 @@ import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog'
 import { TicketList, EStatus, getPaymentLabel } from '@/lib/ticket/TicketTypes'
-import { formatDateTime } from '@/lib/utils'
-import {Check, Clock, XCircle, ChevronLeft, ChevronRight, Download, X, ZoomIn, ZoomOut, RefreshCw,} from 'lucide-react'
+import {cn, formatDateTime} from '@/lib/utils'
+import {
+    Check, Clock, XCircle, ChevronLeft, ChevronRight, Download, X, ZoomIn, ZoomOut, RefreshCw, CheckCircle2,
+} from 'lucide-react'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import {useTicketStore} from "@/lib/stores/useTicketStore";
 
 /** Utils & constants for zoom **/
 const MIN_SCALE = 1
@@ -26,10 +36,19 @@ interface Props {
     currentRow: TicketList | null
 }
 
-export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: Props) {
+export default function TicketDetailDialog({ open, onOpenChange, currentRow }: Props) {
     // state
     const images = currentRow?.images ?? []
     const hasImages = images.length > 0
+
+    const isPendingDisabled =
+        currentRow?.status === EStatus.ONPROCESS ||
+        currentRow?.status === EStatus.COMPLETED ||
+        currentRow?.status === EStatus.PENDING
+
+    const isCompleteDisabled =
+        currentRow?.status === EStatus.ONPROCESS ||
+        currentRow?.status === EStatus.COMPLETED
 
     const [lbOpen, setLbOpen] = useState(false)
     const [lbIndex, setLbIndex] = useState(0)
@@ -39,6 +58,7 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
         setLbIndex(Math.max(0, Math.min(i, images.length - 1)))
         setLbOpen(true)
     }
+    const { setOpen } = useTicketStore()
 
     const prev = useCallback(() => {
         if (!hasImages) return
@@ -72,34 +92,41 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
     }, [lbOpen, lbIndex])
 
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="flex flex-col max-w-3xl">
-                <SheetHeader className="text-left border-b pb-3">
-                    <SheetTitle className="text-lg font-bold">Ticket Detail{currentRow ? ` - ${currentRow.id}` : ''}</SheetTitle>
-                    <SheetDescription asChild>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="flex flex-col
+            w-full
+            sm:max-w-[90vw]
+            md:max-w-[1100px]  /* atau 1200/1280px sesuai selera */
+            max-h-[80vh] p-0 bg-card">
+                <DialogHeader className="text-left border-b pb-3 px-6 pt-4">
+                    <DialogTitle className="text-lg font-bold">
+                        Ticket Detail{currentRow ? ` - ${currentRow.id}` : ''}
+                    </DialogTitle>
+                    <DialogDescription asChild>
                         <div className="grid grid-cols-2 gap-2 items-center">
                             <div>
-                                <span className="text-sm font-medium text-muted-foreground">Store:</span> <b>{currentRow?.idStore ?? '-'}</b>
+                                <span className="text-sm font-medium text-muted-foreground">Store:</span>{' '}
+                                <b>{currentRow?.idStore ?? '-'}</b>
                             </div>
                             <div className="flex justify-end">{currentRow ? renderStatus(currentRow.status) : null}</div>
                         </div>
-                    </SheetDescription>
-                </SheetHeader>
+                    </DialogDescription>
+                </DialogHeader>
 
                 {/* Detail Info */}
-                <div className="flex flex-col gap-6 px-4 py-4 overflow-y-auto overflow-x-hidden">
+                <div className="flex flex-col gap-6 px-6 py-4 overflow-y-auto overflow-x-hidden">
                     {currentRow ? (
                         <>
                             {(() => {
-                                const cat = String(currentRow?.category ?? '').toLowerCase();
-                                const isTransaksi = cat === 'transaksi';
-                                const isVoucher = cat === 'voucher';
-                                const billLabel = isVoucher ? 'Voucher Code' : 'Bill Code';
+                                const cat = String(currentRow?.category ?? '').toLowerCase()
+                                const isTransaksi = cat === 'transaksi'
+                                const isVoucher = cat === 'voucher'
+                                const billLabel = isVoucher ? 'Voucher Code' : 'Bill Code'
 
-                                const directSelling = !!currentRow?.isDirectSelling; // handle null → false
-                                const paymentLabel = (v?: string | null) => (v ? getPaymentLabel(v) : '-');
+                                const directSelling = !!currentRow?.isDirectSelling
+                                const paymentLabel = (v?: string | null) => (v ? getPaymentLabel(v) : '-')
 
-                                const hasImages = Array.isArray(images) && images.length > 0;
+                                const hasImages = Array.isArray(images) && images.length > 0
 
                                 return (
                                     <>
@@ -122,7 +149,6 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
                                                     <InfoItem label="Pembayaran Saat ini" value={paymentLabel(currentRow?.fromPayment)} />
                                                     <InfoItem label="Seharusnya ke" value={paymentLabel(currentRow?.toPayment)} />
 
-                                                    {/** pastikan InfoItem.value = ReactNode (kalau belum, ubah tipenya) */}
                                                     <InfoItem
                                                         label="DirectSelling?"
                                                         value={
@@ -182,7 +208,7 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
                                             </div>
                                         )}
                                     </>
-                                );
+                                )
                             })()}
                         </>
                     ) : (
@@ -190,16 +216,37 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
                     )}
                 </div>
 
-
                 {/* Footer */}
-                <SheetFooter className="gap-2 mt-auto pt-4 border-t">
-                    <SheetClose asChild>
-                        <Button variant="outline" type="button">
-                            Close
-                        </Button>
-                    </SheetClose>
-                </SheetFooter>
-            </SheetContent>
+                <DialogFooter className="gap-2 mt-auto pt-4 border-t px-6 pb-4">
+                    <Button
+                        className={cn(
+                            "min-w-28 font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2",
+                            isPendingDisabled
+                                ? "bg-amber-200 text-amber-700 hover:bg-amber-200 cursor-not-allowed opacity-80"
+                                : "bg-amber-500 hover:bg-amber-600 text-white"
+                        )}
+                        disabled={isPendingDisabled}
+                        onClick={() => setOpen("pending")}
+                    >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Pending
+                    </Button>
+
+                    <Button
+                        className={cn(
+                            "min-w-28 font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2",
+                            isCompleteDisabled
+                                ? "bg-emerald-200 text-emerald-700 hover:bg-emerald-200 cursor-not-allowed opacity-80"
+                                : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                        )}
+                        disabled={isCompleteDisabled}
+                        onClick={() => setOpen("complete")}
+                    >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Complete
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
 
             {/* Lightbox Dialog */}
             {hasImages && (
@@ -215,7 +262,6 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
                                 {lbIndex + 1} / {images.length}
                             </div>
                             <div className="flex items-center gap-1">
-                                {/* Zoom controls */}
                                 <Button size="icon" variant="ghost" title="Zoom out (−)" onClick={() => setZoom((z) => clamp(z - STEP, MIN_SCALE, MAX_SCALE))}>
                                     <ZoomOut className="h-5 w-5" />
                                 </Button>
@@ -265,12 +311,11 @@ export default function TicketDetailDrawer({ open, onOpenChange, currentRow }: P
                     </DialogContent>
                 </Dialog>
             )}
-        </Sheet>
+        </Dialog>
     )
 }
 
-// ---------------- LightboxViewport ----------------
-
+/* ===== LightboxViewport (unchanged) ===== */
 type LightboxViewportProps = {
     src: string
     alt: string
@@ -285,7 +330,6 @@ type LightboxViewportProps = {
 function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, setOffset }: LightboxViewportProps) {
     const frameRef = React.useRef<HTMLDivElement | null>(null)
 
-    // Keyboard (opsional zoom/reset via Ctrl/Cmd)
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'ArrowLeft') onPrev()
@@ -308,7 +352,6 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
         return () => window.removeEventListener('keydown', onKey)
     }, [onPrev, onNext, setZoom, setOffset])
 
-    // WHEEL: trackpad & mouse (pinch=ctrlKey, pan dua-jari saat zoomed-in, mouse wheel zoom stepwise)
     const onWheel = (e: React.WheelEvent) => {
         if (!frameRef.current) return
         e.preventDefault()
@@ -342,11 +385,8 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
         setOffset({ x: nx, y: ny })
     }
 
-    // Pointer-based pan & pinch (touch)
     const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map())
-    const pinchStart = React.useRef<{ dist: number; zoom: number; center: { x: number; y: number }; offset: { x: number; y: number } } | null>(
-        null,
-    )
+    const pinchStart = React.useRef<{ dist: number; zoom: number; center: { x: number; y: number }; offset: { x: number; y: number } } | null>(null)
     const dragging = React.useRef<{ active: boolean; x: number; y: number }>({ active: false, x: 0, y: 0 })
 
     const onPointerDown = (e: React.PointerEvent) => {
@@ -417,7 +457,6 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
 
     return (
         <div className="relative">
-            {/* Nav buttons */}
             <button
                 type="button"
                 onClick={onPrev}
@@ -435,7 +474,6 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
                 <ChevronRight className="h-6 w-6" />
             </button>
 
-            {/* Frame */}
             <div
                 ref={frameRef}
                 onWheel={onWheel}
@@ -473,12 +511,12 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
     )
 }
 
-/* ---------- Small pieces ---------- */
+/* ===== Small UI helpers ===== */
 function InfoItem({label, value, full = false,}: { label: string, value: React.ReactNode, full?: boolean }) {
     return (
         <div className={full ? 'col-span-2' : ''}>
             <label className="text-xs font-medium text-muted-foreground block mb-1">{label}</label>
-            <div className="text-sm text-primary bg-muted/40 rounded px-3 py-2 border w-full max-w-full">
+            <div className="text-sm text-primary rounded px-3 py-2 border w-full max-w-full">
                 {value ?? '-'}
             </div>
         </div>

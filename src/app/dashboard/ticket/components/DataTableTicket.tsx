@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import {
-    IconChevronDown,
     IconChevronLeft,
     IconChevronRight,
     IconChevronsLeft,
@@ -32,7 +31,6 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
@@ -55,16 +53,17 @@ import { Input } from "@/components/ui/input"
 
 import DateRangePicker from "@/components/shared/DateRangePicker"
 import type { DateRange } from "react-day-picker"
-import {DataTableFacet} from "@/app/dashboard/ticket/components/DataTableFacet";
+import { DataTableFacet } from "@/app/dashboard/ticket/components/DataTableFacet"
+import { useTicketStore } from "@/lib/stores/useTicketStore"
+import { TicketList } from "@/lib/ticket/TicketTypes"
 
-interface DataTableProps<TData> {
+interface DataTableProps<TData extends TicketList> {
     data: TData[]
     columns: ColumnDef<TData>[]
     getRowId?: (row: TData, index: number) => string
     defaultColumnVisibility?: VisibilityState
 }
 
-// 🔧 ambil label header
 export function getHeaderLabel<TData>(col: Column<TData, unknown> | undefined): string {
     if (!col) return ""
     const header = col.columnDef.header
@@ -86,45 +85,52 @@ export function getHeaderLabel<TData>(col: Column<TData, unknown> | undefined): 
     return col.id
 }
 
-export function DataTableTicket<TData>({
-                                           data,
-                                           columns,
-                                           getRowId = (_, index) => index.toString(),
-                                           defaultColumnVisibility = {},
-                                       }: DataTableProps<TData>) {
+export function DataTableTicket<TData extends TicketList>({
+                                                              data,
+                                                              columns,
+                                                              getRowId = (_, index) => index.toString(),
+                                                              defaultColumnVisibility = {},
+                                                          }: DataTableProps<TData>) {
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultColumnVisibility)
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [sorting, setSorting] = React.useState<SortingState>([
-        { id: "createdAt", desc: true }, // ASC
+        { id: "createdAt", desc: true },
     ])
     const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 20 })
+
+    // ✅ GLOBAL SEARCH
+    const [globalFilter, setGlobalFilter] = React.useState<string>("")
+
+    const { setOpen, setCurrentRow } = useTicketStore()
+    const openDetail = React.useCallback((row: TData) => {
+        setCurrentRow(row)
+        setOpen("detail")
+    }, [setCurrentRow, setOpen])
 
     const table = useReactTable({
         data,
         columns,
-        state: { sorting, columnVisibility, columnFilters, pagination },
+        state: { sorting, columnVisibility, columnFilters, pagination, globalFilter }, // ✅ include globalFilter
         getRowId,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
+        onGlobalFilterChange: setGlobalFilter, // ✅ handler
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFacetedRowModel: getFacetedRowModel(),
         getFacetedUniqueValues: getFacetedUniqueValues(),
+        // ✅ pastikan semua kolom ikut global search (kecuali yang kamu nonaktifkan sendiri di definisi kolom)
+        defaultColumn: {
+            enableGlobalFilter: true,
+        },
     })
-
-    const filterableColumns = table.getAllColumns().filter((col) => col.columnDef.enableColumnFilter)
-
-    const [searchColumn, setSearchColumn] = React.useState<string | null>(
-        filterableColumns.length > 0 ? filterableColumns[0].id : null
-    )
 
     // 📅 Date range untuk kolom 'createdAt'
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined)
-
     const applyDateFilter = React.useCallback(
         (range: DateRange | undefined) => {
             setDateRange(range)
@@ -139,72 +145,29 @@ export function DataTableTicket<TData>({
         },
         [table]
     )
-
     const clearDateFilter = React.useCallback(() => {
         setDateRange(undefined)
         table.getColumn("createdAt")?.setFilterValue(undefined)
     }, [table])
 
-
     return (
         <div className="w-full flex flex-col gap-6">
             {/* Toolbar */}
             <div className="flex flex-col gap-3 px-4 lg:px-6 lg:flex-row lg:items-center lg:justify-between">
-                {/* Search */}
-                <div className="flex gap-2 w-full lg:max-w-sm">
-                    {filterableColumns.length > 0 && (
-                        <>
-                            <div className="relative flex-1">
-                                <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder={`Search by ${getHeaderLabel(
-                                        filterableColumns.find((c) => c.id === searchColumn) ?? filterableColumns[0]
-                                    )}`}
-                                    className="pl-8"
-                                    value={
-                                        searchColumn
-                                            ? ((table.getColumn(searchColumn)?.getFilterValue() as string) ?? "")
-                                            : ""
-                                    }
-                                    onChange={(e) => {
-                                        if (searchColumn) table.getColumn(searchColumn)?.setFilterValue(e.target.value)
-                                    }}
-                                />
-                            </div>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        {getHeaderLabel(filterableColumns.find((c) => c.id === searchColumn) ?? filterableColumns[0])}
-                                        <IconChevronDown className="ml-1 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {filterableColumns.map((col) => {
-                                        const headerLabel = getHeaderLabel(col)
-                                        return (
-                                            <DropdownMenuItem
-                                                key={col.id}
-                                                onClick={() => {
-                                                    // reset nilai filter text saat ganti kolom
-                                                    filterableColumns.forEach((c) => table.getColumn(c.id)?.setFilterValue(""))
-                                                    setSearchColumn(col.id)
-                                                }}
-                                            >
-                                                {headerLabel}
-                                            </DropdownMenuItem>
-                                        )
-                                    })}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </>
-                    )}
+                {/* 🔎 Global Search */}
+                <div className="relative w-full lg:max-w-sm">
+                    <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search…"
+                        className="pl-8"
+                        value={globalFilter ?? ""}
+                        onChange={(e) => table.setGlobalFilter(e.target.value)}
+                    />
                 </div>
-
 
                 {/* Date Range + Columns */}
                 <div className="flex items-center gap-2">
-                    <DataTableFacet table={table} columnId="status" title="Status" maxChips={3}/>
+                    <DataTableFacet table={table} columnId="status" title="Status" maxChips={3} />
                     <DateRangePicker
                         value={dateRange}
                         onChange={applyDateFilter}
@@ -225,7 +188,6 @@ export function DataTableTicket<TData>({
                                 <IconLayoutColumns className="h-4 w-4" />
                                 <span className="hidden lg:inline">View</span>
                                 <span className="lg:hidden">Columns</span>
-                                <IconChevronDown className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
@@ -267,7 +229,19 @@ export function DataTableTicket<TData>({
                         <TableBody className="**:data-[slot=table-cell]:first:w-8">
                             {table.getRowModel().rows?.length ? (
                                 table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id}>
+                                    <TableRow
+                                        key={row.id}
+                                        role="button"
+                                        tabIndex={0}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onDoubleClick={() => openDetail(row.original as TData)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault()
+                                                openDetail(row.original as TData)
+                                            }
+                                        }}
+                                    >
                                         {row.getVisibleCells().map((cell) => (
                                             <TableCell key={cell.id}>
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
