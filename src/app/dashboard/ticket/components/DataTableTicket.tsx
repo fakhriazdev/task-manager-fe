@@ -62,6 +62,14 @@ interface DataTableProps<TData extends TicketList> {
     columns: ColumnDef<TData>[]
     getRowId?: (row: TData, index: number) => string
     defaultColumnVisibility?: VisibilityState
+    /** Angkat query ke parent untuk global search lintas handler/tabs */
+    onGlobalQueryChange?: (q: string) => void
+    /** Prefill nilai global search dari parent (opsional) */
+    defaultGlobalQuery?: string
+    /** Minta fokuskan input search segera setelah tab __search__ aktif */
+    autoFocusGlobalSearch?: boolean
+    /** Callback setelah input berhasil fokus (untuk reset flag di parent) */
+    onSearchFocused?: () => void
 }
 
 export function getHeaderLabel<TData>(col: Column<TData, unknown> | undefined): string {
@@ -90,44 +98,78 @@ export function DataTableTicket<TData extends TicketList>({
                                                               columns,
                                                               getRowId = (_, index) => index.toString(),
                                                               defaultColumnVisibility = {},
+                                                              onGlobalQueryChange,
+                                                              defaultGlobalQuery,
+                                                              autoFocusGlobalSearch,
+                                                              onSearchFocused,
                                                           }: DataTableProps<TData>) {
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultColumnVisibility)
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-    const [sorting, setSorting] = React.useState<SortingState>([
-        { id: "createdAt", desc: true },
-    ])
+    const [sorting, setSorting] = React.useState<SortingState>([{ id: "createdAt", desc: true }])
     const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 20 })
 
-    // ✅ GLOBAL SEARCH
-    const [globalFilter, setGlobalFilter] = React.useState<string>("")
+    // ✅ GLOBAL SEARCH (prefill dari parent bila ada)
+    const [globalFilter, setGlobalFilter] = React.useState<string>(defaultGlobalQuery ?? "")
+
+    // ref untuk auto-focus input search
+    const searchInputRef = React.useRef<HTMLInputElement>(null)
+
+    // Sinkronkan perubahan defaultGlobalQuery dari parent (jika berubah di runtime)
+    React.useEffect(() => {
+        if (defaultGlobalQuery !== undefined && defaultGlobalQuery !== globalFilter) {
+            setGlobalFilter(defaultGlobalQuery)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [defaultGlobalQuery])
+
+    // Angkat perubahan query ke parent (tanpa debounce agar responsif; debounce-nya bisa di parent)
+    React.useEffect(() => {
+        onGlobalQueryChange?.(globalFilter)
+    }, [globalFilter, onGlobalQueryChange])
+
+    // Fokuskan input saat diminta (misal ketika pindah ke tab "__search__")
+    React.useEffect(() => {
+        if (autoFocusGlobalSearch && searchInputRef.current) {
+            searchInputRef.current.focus({ preventScroll: true })
+            onSearchFocused?.()
+        }
+    }, [autoFocusGlobalSearch, onSearchFocused])
 
     const { setOpen, setCurrentRow } = useTicketStore()
-    const openDetail = React.useCallback((row: TData) => {
-        setCurrentRow(row)
-        setOpen("detail")
-    }, [setCurrentRow, setOpen])
+    const openDetail = React.useCallback(
+        (row: TData) => {
+            setCurrentRow(row)
+            setOpen("detail")
+        },
+        [setCurrentRow, setOpen]
+    )
 
     const table = useReactTable({
         data,
         columns,
-        state: { sorting, columnVisibility, columnFilters, pagination, globalFilter }, // ✅ include globalFilter
+        state: { sorting, columnVisibility, columnFilters, pagination, globalFilter },
         getRowId,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
-        onGlobalFilterChange: setGlobalFilter, // ✅ handler
+        onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFacetedRowModel: getFacetedRowModel(),
         getFacetedUniqueValues: getFacetedUniqueValues(),
-        // ✅ pastikan semua kolom ikut global search (kecuali yang kamu nonaktifkan sendiri di definisi kolom)
         defaultColumn: {
+            // ✅ semua kolom ikut global search (kecuali yang di-disable di definisi kolom)
             enableGlobalFilter: true,
         },
     })
+
+    // Auto reset ke page 1 saat filter/sort/search berubah
+    React.useEffect(() => {
+        setPagination((p) => (p.pageIndex === 0 ? p : { ...p, pageIndex: 0 }))
+    }, [globalFilter, columnFilters, sorting])
 
     // 📅 Date range untuk kolom 'createdAt'
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined)
@@ -145,6 +187,7 @@ export function DataTableTicket<TData extends TicketList>({
         },
         [table]
     )
+
     const clearDateFilter = React.useCallback(() => {
         setDateRange(undefined)
         table.getColumn("createdAt")?.setFilterValue(undefined)
@@ -158,11 +201,27 @@ export function DataTableTicket<TData extends TicketList>({
                 <div className="relative w-full lg:max-w-sm">
                     <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
+                        ref={searchInputRef}
                         placeholder="Search…"
-                        className="pl-8"
-                        value={globalFilter ?? ""}
+                        className="pl-8 pr-8" // ruang di kanan untuk tombol X
+                        value={globalFilter}
                         onChange={(e) => table.setGlobalFilter(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Escape" && globalFilter) {
+                                table.setGlobalFilter("")
+                            }
+                        }}
                     />
+                    {globalFilter ? (
+                        <button
+                            type="button"
+                            onClick={() => table.setGlobalFilter("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-5 w-5 rounded hover:bg-muted/70 text-muted-foreground"
+                            aria-label="Clear search"
+                        >
+                            <IconX className="h-4 w-4" />
+                        </button>
+                    ) : null}
                 </div>
 
                 {/* Date Range + Columns */}

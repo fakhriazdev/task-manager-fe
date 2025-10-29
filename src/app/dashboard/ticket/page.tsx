@@ -77,7 +77,6 @@ export default function Page() {
         );
     }
 
-    // Pastikan `activeTab` selalu string valid untuk komponen Tabs (hindari undefined)
     const tabValue = activeTab ?? computeFirstTab() ?? (isSuper ? "all" : user?.nik) ?? items[0]?.nik;
 
     return (
@@ -91,7 +90,7 @@ export default function Page() {
                     >
                         {/* Header Tabs */}
                         <div className="flex items-center justify-between px-4 lg:px-6">
-                            {/* Scroll-snap untuk UX mobile yang lebih halus */}
+
                             <TabsList className="max-w-full overflow-x-auto scrollbar-none">
                                 <div className="flex gap-2">
                                     {/* Tab All → hanya SUPER */}
