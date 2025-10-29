@@ -96,22 +96,69 @@ export default function TicketDetailDialog({ open, onOpenChange, currentRow }: P
             <DialogContent className="flex flex-col
             w-full
             sm:max-w-[90vw]
-            md:max-w-[1100px]  /* atau 1200/1280px sesuai selera */
+            md:max-w-[550px]  /* atau 1200/1280px sesuai selera */
             max-h-[80vh] p-0 bg-card">
-                <DialogHeader className="text-left border-b pb-3 px-6 pt-4">
+                <DialogHeader className="text-left border-b px-6 pt-4 pb-3">
                     <DialogTitle className="text-lg font-bold">
-                        Ticket Detail{currentRow ? ` - ${currentRow.id}` : ''}
-                    </DialogTitle>
-                    <DialogDescription asChild>
-                        <div className="grid grid-cols-2 gap-2 items-center">
+                        <div className="flex justify-between pr-6 items-center content-center">
                             <div>
-                                <span className="text-sm font-medium text-muted-foreground">Store:</span>{' '}
-                                <b>{currentRow?.idStore ?? '-'}</b>
+                                Ticket Detail{currentRow?.id ? ` - ${currentRow.id}` : ''}
                             </div>
-                            <div className="flex justify-end">{currentRow ? renderStatus(currentRow.status) : null}</div>
+                            <div>
+                                {currentRow ? renderStatus(currentRow.status) : <span className="text-muted-foreground">-</span>}
+                            </div>
+
                         </div>
+
+                    </DialogTitle>
+
+                    <DialogDescription asChild>
+                        <section className="mt-2 grid grid-cols-1 md:grid-cols-[1fr_auto] items-start gap-x-10 gap-y-3">
+                            <dl className="space-y-1">
+                                <div className="grid grid-cols-[55px_1fr] items-baseline gap-x-3">
+                                    <dt className="text-[13px] text-muted-foreground">Store</dt>
+                                    <dd className="font-semibold text-primary">
+                                        {currentRow?.idStore ?? <span className="text-muted-foreground">-</span>}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[55px_1fr] items-baseline gap-x-3">
+                                    <dt className="text-[13px] text-muted-foreground">Category</dt>
+                                    <dd className="font-semibold text-primary">
+                                        {currentRow?.category ?? <span className="text-muted-foreground">-</span>}
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            {/* KANAN */}
+                            <dl className="space-y-1 md:text-right">
+                                {/*<div className="grid grid-cols-[116px_auto] items-baseline gap-x-3 md:justify-items-start">*/}
+                                {/*    <dt className="text-[13px] text-muted-foreground">Status</dt>*/}
+                                {/*    <dd className="text-sm">*/}
+
+                                {/*    </dd>*/}
+                                {/*</div>*/}
+
+                                <div className="grid grid-cols-[116px_auto] items-baseline gap-x-3 md:justify-items-start">
+                                    <dt className="text-[13px] text-muted-foreground">Completed By</dt>
+                                    <dd className="text-sm font-medium">
+                                        {currentRow?.completedBy?.nama ?? <span className="text-muted-foreground">-</span>}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-[116px_auto] items-baseline gap-x-3 md:justify-items-start">
+                                    <dt className="text-[13px] text-muted-foreground">Completed At</dt>
+                                    <dd className="text-sm">
+                                        {currentRow?.completedAt
+                                            ? formatDateTime(currentRow.completedAt)
+                                            : <span className="text-muted-foreground">-</span>}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </section>
                     </DialogDescription>
                 </DialogHeader>
+
 
                 {/* Detail Info */}
                 <div className="flex flex-col gap-6 px-6 py-4 overflow-y-auto overflow-x-hidden">
@@ -131,26 +178,21 @@ export default function TicketDetailDialog({ open, onOpenChange, currentRow }: P
                                 return (
                                     <>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 w-full max-w-full">
-                                            <InfoItem label="Category" value={currentRow.category ?? '-'} />
-                                            <InfoItem label="No. Telepon" value={currentRow.noTelp ?? '-'} />
+                                            <>
+                                                <InfoItem label="No. Telepon" value={currentRow.noTelp ?? '-'} />
+                                                <InfoItem label="ID Team Viewer" value={currentRow.idtv ?? '-'} />
+                                            </>
 
                                             <InfoItem label="Description" value={currentRow.description ?? '-'} full />
 
                                             {(isTransaksi || isVoucher) && (
-                                                <InfoItem
-                                                    label={billLabel}
-                                                    value={currentRow?.billCode && currentRow.billCode.trim() !== '' ? currentRow.billCode : '-'}
-                                                    full
-                                                />
-                                            )}
-
-                                            {isTransaksi && (
                                                 <>
-                                                    <InfoItem label="Pembayaran Saat ini" value={paymentLabel(currentRow?.fromPayment)} />
-                                                    <InfoItem label="Seharusnya ke" value={paymentLabel(currentRow?.toPayment)} />
+                                                    <InfoItem label={billLabel} value={currentRow?.billCode && currentRow.billCode.trim() !== '' ? currentRow.billCode : '-'}
+                                                    />
 
                                                     <InfoItem
                                                         label="DirectSelling?"
+                                                        border={false}
                                                         value={
                                                             <Badge
                                                                 variant="outline"
@@ -163,17 +205,17 @@ export default function TicketDetailDialog({ open, onOpenChange, currentRow }: P
                                                                 {directSelling ? 'Ya' : 'Tidak'}
                                                             </Badge>
                                                         }
-                                                        full
+
                                                     />
                                                 </>
                                             )}
 
-                                            <InfoItem
-                                                label="Completed At"
-                                                value={currentRow.completedAt ? formatDateTime(currentRow.completedAt) : '-'}
-                                            />
-                                            <InfoItem label="Completed By" value={currentRow?.completedBy?.nama ?? '-'} />
-                                            <InfoItem label="ID Team Viewer" value={currentRow.idtv ?? '-'} full />
+                                            {isTransaksi && (
+                                                <>
+                                                    <InfoItem label="Pembayaran Saat ini" value={paymentLabel(currentRow?.fromPayment)} />
+                                                    <InfoItem label="Seharusnya ke" value={paymentLabel(currentRow?.toPayment)} />
+                                                </>
+                                            )}
                                         </div>
 
                                         {/* Images Carousel */}
@@ -511,17 +553,28 @@ function LightboxViewport({ src, alt, onPrev, onNext, zoom, setZoom, offset, set
     )
 }
 
-/* ===== Small UI helpers ===== */
-function InfoItem({label, value, full = false,}: { label: string, value: React.ReactNode, full?: boolean }) {
+function InfoItem({
+                      label,
+                      value,
+                      border= true,
+                      full = false,
+                  }: { label: string; value: React.ReactNode; full?: boolean ; border?: boolean }) {
+
     return (
-        <div className={full ? 'col-span-2' : ''}>
+        <div className={cn(full && 'col-span-2')}>
             <label className="text-xs font-medium text-muted-foreground block mb-1">{label}</label>
-            <div className="text-sm text-primary rounded px-3 py-2 border w-full max-w-full">
+            <div
+                className={cn(
+                    'text-sm text-primary rounded px-3 py-2 w-full max-w-full',
+                    border && 'border',
+                )}
+            >
                 {value ?? '-'}
             </div>
         </div>
     )
 }
+
 
 function renderStatus(status: EStatus) {
     let label = ''

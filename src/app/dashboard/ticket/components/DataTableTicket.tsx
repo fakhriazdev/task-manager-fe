@@ -22,6 +22,7 @@ import {
     getPaginationRowModel,
     getSortedRowModel,
     HeaderContext,
+    RowSelectionState,
     SortingState,
     useReactTable,
     VisibilityState,
@@ -62,19 +63,15 @@ interface DataTableProps<TData extends TicketList> {
     columns: ColumnDef<TData>[]
     getRowId?: (row: TData, index: number) => string
     defaultColumnVisibility?: VisibilityState
-    /** Angkat query ke parent untuk global search lintas handler/tabs */
     onGlobalQueryChange?: (q: string) => void
-    /** Prefill nilai global search dari parent (opsional) */
     defaultGlobalQuery?: string
-    /** Minta fokuskan input search segera setelah tab __search__ aktif */
     autoFocusGlobalSearch?: boolean
-    /** Callback setelah input berhasil fokus (untuk reset flag di parent) */
     onSearchFocused?: () => void
 }
 
 export function getHeaderLabel<TData>(col: Column<TData, unknown> | undefined): string {
     if (!col) return ""
-    const header = col.columnDef.header
+    const header = col?.columnDef?.header
     if (typeof header === "string") return header
     if (typeof header === "function") {
         try {
@@ -87,10 +84,10 @@ export function getHeaderLabel<TData>(col: Column<TData, unknown> | undefined): 
                 if (Array.isArray(children)) return children.filter((c) => typeof c === "string").join(" ")
             }
         } catch {
-            return col.id
+            return col?.id ?? ""
         }
     }
-    return col.id
+    return col?.id ?? ""
 }
 
 export function DataTableTicket<TData extends TicketList>({
@@ -108,13 +105,10 @@ export function DataTableTicket<TData extends TicketList>({
     const [sorting, setSorting] = React.useState<SortingState>([{ id: "createdAt", desc: true }])
     const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 20 })
 
-    // ✅ GLOBAL SEARCH (prefill dari parent bila ada)
+    // Global search
     const [globalFilter, setGlobalFilter] = React.useState<string>(defaultGlobalQuery ?? "")
-
-    // ref untuk auto-focus input search
     const searchInputRef = React.useRef<HTMLInputElement>(null)
 
-    // Sinkronkan perubahan defaultGlobalQuery dari parent (jika berubah di runtime)
     React.useEffect(() => {
         if (defaultGlobalQuery !== undefined && defaultGlobalQuery !== globalFilter) {
             setGlobalFilter(defaultGlobalQuery)
@@ -122,12 +116,10 @@ export function DataTableTicket<TData extends TicketList>({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [defaultGlobalQuery])
 
-    // Angkat perubahan query ke parent (tanpa debounce agar responsif; debounce-nya bisa di parent)
     React.useEffect(() => {
         onGlobalQueryChange?.(globalFilter)
     }, [globalFilter, onGlobalQueryChange])
 
-    // Fokuskan input saat diminta (misal ketika pindah ke tab "__search__")
     React.useEffect(() => {
         if (autoFocusGlobalSearch && searchInputRef.current) {
             searchInputRef.current.focus({ preventScroll: true })
@@ -135,25 +127,38 @@ export function DataTableTicket<TData extends TicketList>({
         }
     }, [autoFocusGlobalSearch, onSearchFocused])
 
+    // ====== Detail open state (dari store) ======
+    const open = useTicketStore((s) => s.open)
     const { setOpen, setCurrentRow } = useTicketStore()
+
+    // Row selection: akan aktif hanya saat detail terbuka
+    const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
+
     const openDetail = React.useCallback(
-        (row: TData) => {
+        (row: TData, rowId: string) => {
+            setRowSelection({ [rowId]: true }) // tandai selected
             setCurrentRow(row)
             setOpen("detail")
         },
         [setCurrentRow, setOpen]
     )
 
+    // Bersihkan selection ketika detail ditutup
+    React.useEffect(() => {
+        if (open !== "detail") setRowSelection({})
+    }, [open])
+
     const table = useReactTable({
         data,
         columns,
-        state: { sorting, columnVisibility, columnFilters, pagination, globalFilter },
+        state: { sorting, columnVisibility, columnFilters, pagination, globalFilter, rowSelection },
         getRowId,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: setPagination,
         onGlobalFilterChange: setGlobalFilter,
+        onRowSelectionChange: setRowSelection,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -161,17 +166,18 @@ export function DataTableTicket<TData extends TicketList>({
         getFacetedRowModel: getFacetedRowModel(),
         getFacetedUniqueValues: getFacetedUniqueValues(),
         defaultColumn: {
-            // ✅ semua kolom ikut global search (kecuali yang di-disable di definisi kolom)
             enableGlobalFilter: true,
         },
+        enableRowSelection: true,
     })
 
-    // Auto reset ke page 1 saat filter/sort/search berubah
+    // Reset ke page 1 saat filter/sort/search berubah (tanpa mengubah selection;
+    // selection akan diatur oleh state `open`)
     React.useEffect(() => {
         setPagination((p) => (p.pageIndex === 0 ? p : { ...p, pageIndex: 0 }))
     }, [globalFilter, columnFilters, sorting])
 
-    // 📅 Date range untuk kolom 'createdAt'
+    // Date range untuk kolom 'createdAt'
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined)
     const applyDateFilter = React.useCallback(
         (range: DateRange | undefined) => {
@@ -197,19 +203,17 @@ export function DataTableTicket<TData extends TicketList>({
         <div className="w-full flex flex-col gap-6">
             {/* Toolbar */}
             <div className="flex flex-col gap-3 px-4 lg:px-6 lg:flex-row lg:items-center lg:justify-between">
-                {/* 🔎 Global Search */}
+                {/* Global Search */}
                 <div className="relative w-full lg:max-w-sm">
                     <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         ref={searchInputRef}
                         placeholder="Search…"
-                        className="pl-8 pr-8" // ruang di kanan untuk tombol X
+                        className="pl-8 pr-8"
                         value={globalFilter}
                         onChange={(e) => table.setGlobalFilter(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === "Escape" && globalFilter) {
-                                table.setGlobalFilter("")
-                            }
+                            if (e.key === "Escape" && globalFilter) table.setGlobalFilter("")
                         }}
                     />
                     {globalFilter ? (
@@ -277,9 +281,7 @@ export function DataTableTicket<TData extends TicketList>({
                                 <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => (
                                         <TableHead key={header.id} colSpan={header.colSpan}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(header.column.columnDef.header, header.getContext())}
+                                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                                         </TableHead>
                                     ))}
                                 </TableRow>
@@ -287,27 +289,33 @@ export function DataTableTicket<TData extends TicketList>({
                         </TableHeader>
                         <TableBody className="**:data-[slot=table-cell]:first:w-8">
                             {table.getRowModel().rows?.length ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        role="button"
-                                        tabIndex={0}
-                                        className="cursor-pointer hover:bg-muted/50"
-                                        onDoubleClick={() => openDetail(row.original as TData)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter" || e.key === " ") {
-                                                e.preventDefault()
-                                                openDetail(row.original as TData)
-                                            }
-                                        }}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
+                                table.getRowModel().rows.map((row) => {
+                                    const isSelected = !!table.getState().rowSelection[row.id]
+                                    return (
+                                        <TableRow
+                                            key={row.id}
+                                            role="button"
+                                            tabIndex={0}
+                                            data-state={isSelected ? "selected" : undefined}
+                                            className={[
+                                                "cursor-pointer hover:bg-muted/50 transition",
+                                                isSelected ? "bg-primary/5 ring-1 ring-primary" : "",
+                                            ].join(" ")}
+                                            onDoubleClick={() => openDetail(row.original as TData, row.id)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                    e.preventDefault()
+                                                    openDetail(row.original as TData, row.id)
+                                                }
+                                            }}
+                                            // klik biasa tidak mengubah selection (supaya hanya aktif saat detail)
+                                        >
+                                            {row.getVisibleCells().map((cell) => (
+                                                <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                                            ))}
+                                        </TableRow>
+                                    )
+                                })
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={columns.length} className="h-24 text-center">
