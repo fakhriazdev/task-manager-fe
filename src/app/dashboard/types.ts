@@ -7,7 +7,7 @@ type User = {
     avatar: string
 }
 
-// 👥 Teams list di sidebar (kalau multi-org)
+// 👥 Teams ui di sidebar (kalau multi-org)
 type Team = {
     name: string
     logo: React.ElementType

@@ -1,0 +1,17 @@
+// TaskTableHead.tsx
+"use client";
+
+import { TableHeader, TableRow, TableHead } from "@/components/ui/table";
+
+export function TaskTableHead() {
+    return (
+        <TableHeader className="sticky top-0 z-10 bg-muted/40 border-b">
+            <TableRow className="divide-x divide-border">
+                <TableHead colSpan={2} className="py-2 px-3 text-center">Nama</TableHead>
+                <TableHead className="py-2 px-3 text-center">Assignee</TableHead>
+                <TableHead className="py-2 px-3 text-center">Tenggat</TableHead>
+                <TableHead className="py-2 px-3 text-center">Creator</TableHead>
+            </TableRow>
+        </TableHeader>
+    );
+}

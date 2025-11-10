@@ -227,7 +227,7 @@ export function useReassignTicket(): UseMutationResult<
             toast.dismiss();
             toast.loading("Mengalihkan handler tiket...");
 
-            // 🔄 Optimistic update untuk list ["ticket"]
+            // 🔄 Optimistic update untuk ui ["ticket"]
             await queryClient.cancelQueries({ queryKey: ["ticket"] });
             const prevTickets = queryClient.getQueryData<TicketList[]>(["ticket"]);
 

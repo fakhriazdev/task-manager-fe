@@ -132,13 +132,6 @@ export default function TicketDetailDialog({ open, onOpenChange, currentRow }: P
 
                             {/* KANAN */}
                             <dl className="space-y-1 md:text-right">
-                                {/*<div className="grid grid-cols-[116px_auto] items-baseline gap-x-3 md:justify-items-start">*/}
-                                {/*    <dt className="text-[13px] text-muted-foreground">Status</dt>*/}
-                                {/*    <dd className="text-sm">*/}
-
-                                {/*    </dd>*/}
-                                {/*</div>*/}
-
                                 <div className="grid grid-cols-[116px_auto] items-baseline gap-x-3 md:justify-items-start">
                                     <dt className="text-[13px] text-muted-foreground">Completed By</dt>
                                     <dd className="text-sm font-medium">

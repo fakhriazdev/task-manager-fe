@@ -7,17 +7,18 @@ import { Label } from '@/components/ui/label'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { GalleryHorizontal, Info, TableOfContents, Users, UserPlus } from 'lucide-react'
+import { Info, TableOfContents, UserPlus } from 'lucide-react'
 
-import OverviewTab from '@/app/dashboard/projects/[id]/overview/OverviewTab'
-import ListTab from '@/app/dashboard/projects/[id]/list/ListTab'
+import OverviewTab from '@/app/dashboard/projects/[id]/overview/components/OverviewTab'
+import ListTab from '@/app/dashboard/projects/[id]/list/component/ui/ListTab'
 
 import { useProjectDetailAction, useProjectTasksAction } from '@/lib/project/projectAction'
+import AvatarGroup, {AvatarGroupItem} from "@/components/shared/AvatarGroup";
+import InviteDialogDemo from "@/app/dashboard/projects/[id]/overview/components/DialogInvitation";
 
 const TAB_KEYS = {
     OVERVIEW: 'overview',
     LIST: 'list',
-    BOARD: 'board',
 } as const
 type TabKey = typeof TAB_KEYS[keyof typeof TAB_KEYS]
 
@@ -25,14 +26,12 @@ export default function PageProjectDetail() {
     const { id } = useParams()
     const projectId = String(id)
 
-    const [activeTab, setActiveTab] = useState<TabKey>(TAB_KEYS.BOARD)
+    const [activeTab, setActiveTab] = useState<TabKey>(TAB_KEYS.LIST)
 
-    // Detail project
     const { data: project, isLoading: loadingProject, error: projectError } =
         useProjectDetailAction(projectId)
 
-    // Tasks dengan polling yang smart - hanya aktif di tab LIST/BOARD
-    const shouldPoll = activeTab === TAB_KEYS.LIST || activeTab === TAB_KEYS.BOARD
+    const shouldPoll = activeTab === TAB_KEYS.LIST
 
     const { data: taskList, isLoading: loadingTasks, error: tasksError } =
         useProjectTasksAction(projectId, shouldPoll)
@@ -55,12 +54,26 @@ export default function PageProjectDetail() {
 
                 <div className="flex gap-3 items-center text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
-                        <Users className="size-4" />
-                        <span>People</span>
+                        <AvatarGroup max={7} size={"md"}>
+                            {project?.members?.map((member, i) => (
+                                <AvatarGroupItem
+                                    key={i}
+                                    name={member.nama}
+                                    alt={member.nama}
+                                />
+                            ))}
+                        </AvatarGroup>
                     </div>
                     <div className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
-                        <UserPlus className="size-4" />
-                        <span>Add Assignee</span>
+                        <InviteDialogDemo
+                            projectName={project?.name}
+                            trigger={
+                                <div className="flex items-center gap-1" role="button" tabIndex={0}>
+                                    <UserPlus className="size-4" />
+                                    <span>Add Assignee</span>
+                                </div>
+                            }
+                        />
                     </div>
                 </div>
             </div>
@@ -93,11 +106,6 @@ export default function PageProjectDetail() {
                                     <TableOfContents strokeWidth={2} className="size-4" /> <span>List</span>
                                 </div>
                             </SelectItem>
-                            <SelectItem value={TAB_KEYS.BOARD}>
-                                <div className="flex items-center gap-2">
-                                    <GalleryHorizontal strokeWidth={2} className="size-4" /> <span>Board</span>
-                                </div>
-                            </SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -108,9 +116,6 @@ export default function PageProjectDetail() {
                         </TabsTrigger>
                         <TabsTrigger value={TAB_KEYS.LIST}>
                             <TableOfContents strokeWidth={2} className="size-4 mr-1" /> List
-                        </TabsTrigger>
-                        <TabsTrigger value={TAB_KEYS.BOARD}>
-                            <GalleryHorizontal strokeWidth={2} className="size-4 mr-1" /> Board
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -135,21 +140,6 @@ export default function PageProjectDetail() {
                         <div className="h-24 bg-muted animate-pulse rounded-md" />
                     ) : taskList ? (
                         <ListTab />
-                    ) : null}
-                </TabsContent>
-
-                <TabsContent value={TAB_KEYS.BOARD}>
-                    {tasksError ? (
-                        <p className="text-sm text-red-500">Failed to load tasks</p>
-                    ) : loadingTasks ? (
-                        <div className="h-24 bg-muted animate-pulse rounded-md" />
-                    ) : taskList ? (
-                        <div>
-                            <p className="mb-2">Board</p>
-                            <pre className="text-xs bg-muted p-2 rounded-md overflow-auto">
-                                {JSON.stringify(taskList, null, 2)}
-                            </pre>
-                        </div>
                     ) : null}
                 </TabsContent>
             </Tabs>

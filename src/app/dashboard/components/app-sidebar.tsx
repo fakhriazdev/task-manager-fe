@@ -49,7 +49,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             .catch((err) => console.error('Failed to fetch user info:', err))
     }, [user, isAuthenticated, queryClient, setUser])
 
-    // 🔹 Ambil project list dari React Query
+    // 🔹 Ambil project ui dari React Query
     const { data: projects = [], isLoading, refetch } = useProjectAction()
 
     // 🔹 Role-based filter
@@ -95,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             variant="outline"
                             size="sm"
                             className="w-full justify-start rounded-full text-sm font-medium"
-                            onClick={() => refetch()} // refresh project list
+                            onClick={() => refetch()} // refresh project ui
                         >
                             <Plus className="mr-2 size-4 text-red-500" /> Refresh
                         </Button>

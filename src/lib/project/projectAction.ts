@@ -4,42 +4,36 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import type { CommonResponse } from '@/lib/store/storeTypes'
 import type {
+    AddSubTaskRequest,
     AssigneeInput,
-    MoveSectionPayload,
+    MoveSectionPayload, MoveSubTaskPayload,
     MoveTaskPayload,
     Project,
     ProjectDetail,
     Task,
     TaskList,
     TaskPatch,
-    TaskUpdateInput
+    TaskUpdateInput, UpdateSubTaskRequest,
 } from '@/lib/project/projectTypes'
 import ProjectService from '@/lib/project/projectService'
 import { Assignees } from "@/app/dashboard/projects/[id]/list/types/task"
+import {useMemo} from 'react'
 
 
 // CONSTANTS & CONFIG
-
-
 const TASK_STALE_TIME = 2 * 1000 // 2 seconds
 const TASK_GC_TIME = 5 * 60 * 1000 // 5 minutes
 const POLLING_INTERVAL = 3000 // 3 seconds
 const MAX_RETRY_COUNT = 3
 
-
 // QUERY KEYS
-
-
 const qk = {
     projects: () => ['projects'] as const,
     project: (id?: string) => ['project', id] as const,
     tasks: (id?: string) => ['tasks', id] as const,
+    task: (projectId?: string, taskId?: string) => ['task', projectId, taskId] as const, // 👈 baru
 }
-
-
 // ERROR HANDLING UTILITIES
-
-
 interface ApiError {
     statusCode?: number
     status?: number
@@ -98,8 +92,6 @@ function useErrorHandler(projectId?: string) {
 
 
 // UTILITY FUNCTIONS
-
-
 function moveInArray<T>(arr: T[], from: number, to: number): T[] {
     if (from === to) return arr
     if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) {
@@ -220,8 +212,6 @@ const applyOptimistic = (t: Task, input: TaskUpdateInput): Task => {
 
 
 // HOOKS
-
-
 export function useProjectAction() {
     const handleError = useErrorHandler()
 
@@ -305,15 +295,120 @@ export function useProjectTasksAction(
     })
 }
 
-export function useLiveTask(projectId: string | undefined, taskId: string | undefined) {
+export function useLiveTask(projectId?: string, taskId?: string) {
     const { data: taskList } = useProjectTasksAction(projectId, false)
-
-    if (!projectId || !taskId || !taskList) return null
-
-    return findTaskById(taskList, taskId)
+    return useMemo(() => {
+        if (!projectId || !taskId || !taskList) return null
+        return findTaskById(taskList, taskId)
+    }, [projectId, taskId, taskList])
 }
 
+
 // MUTATION HOOKS
+type CreateVars = {
+    name: string;
+    section?: string | null;
+    tag?: string;
+    desc?: string;
+    beforeId?: string | null;
+    afterId?: string | null;
+};
+export const useCreateTaskAction = (projectId?: string) => {
+    const qc = useQueryClient();
+    const key = ['tasks', projectId] as const;
+
+    return useMutation<
+        CommonResponse<string>,
+        Error,
+        CreateVars,
+        { prev?: TaskList; tempId?: string }
+    >({
+        mutationKey: ['task-create', projectId],
+        mutationFn: async (vars) => {
+            if (!projectId) throw new Error('Project ID is required');
+            return ProjectService.addTask(projectId, {
+                name: vars.name,
+                tag: vars.tag,
+                desc: vars.desc,
+                section: vars.section ?? undefined,
+            });
+        },
+
+        onMutate: async ({ name, section = null, tag, desc, beforeId = null, afterId = null }) => {
+            await qc.cancelQueries({ queryKey: key });
+            const prev = qc.getQueryData<TaskList>(key);
+            const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+            if (prev) {
+                const next: TaskList = {
+                    unlocated: [...(prev.unlocated ?? [])],
+                    sections: (prev.sections ?? []).map((s) => ({ ...s, tasks: [...(s.tasks ?? [])] })),
+                };
+
+                // Minimal shape Task supaya UI kamu aman
+                const newTask = ({
+                    id: tempId,
+                    name,
+                    desc: desc ?? null,
+                    tag: tag ?? undefined,
+                    // tambahkan default field lain sesuai tipe Task kamu
+                    // status: 'todo', assignees: [], dueDate: null, ...
+                } as unknown) as Task;
+
+                const insertWithOrder = (list: Task[]) => {
+                    const ids = list.map((t) => t.id);
+                    const ins = computeInsertIndex(ids, beforeId, afterId);
+                    return insertAt(list, ins, newTask);
+                };
+
+                if (!section) {
+                    next.unlocated = insertWithOrder(next.unlocated);
+                } else {
+                    const sec = next.sections.find((s) => s.id === section);
+                    if (sec) sec.tasks = insertWithOrder(sec.tasks);
+                    else next.unlocated = insertWithOrder(next.unlocated);
+                }
+
+                qc.setQueryData<TaskList>(key, next);
+            }
+
+            return { prev, tempId };
+        },
+
+        onError: (error, _vars, ctx) => {
+            if (ctx?.prev) qc.setQueryData<TaskList>(key, ctx.prev);
+            if (!isForbiddenError(error)) console.error('Task create failed:', error);
+        },
+
+        onSuccess: (res, _vars, ctx) => {
+            const realId = res?.data;
+            if (!realId || !ctx?.tempId) return;
+
+            const cur = qc.getQueryData<TaskList>(key);
+            if (!cur) return;
+
+            const replaced: TaskList = {
+                ...cur,
+                sections: (cur.sections ?? []).map((s) => ({
+                    ...s,
+                    tasks: s.tasks?.map((t) => (t.id === ctx.tempId ? ({ ...t, id: realId } as Task) : t)) ?? [],
+                })),
+                unlocated: (cur.unlocated ?? []).map((t) => (t.id === ctx.tempId ? ({ ...t, id: realId } as Task) : t)),
+            };
+
+            qc.setQueryData<TaskList>(key, replaced);
+        },
+
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey: key });
+        },
+
+        retry: (failureCount, error) => {
+            if (isForbiddenError(error)) return false;
+            return failureCount < 3 && !isClientError(error);
+        },
+    });
+};
 
 export const useUpdateTask = (projectId?: string) => {
     const qc = useQueryClient()
@@ -376,6 +471,164 @@ export const useUpdateTask = (projectId?: string) => {
         },
     })
 }
+
+type CreateSectionVars = {
+    name: string;
+    beforeId?: string | null;
+    afterId?: string | null;
+};
+
+export const useCreateSectionAction = (projectId?: string) => {
+    const qc = useQueryClient();
+    const key = ['tasks', projectId] as const;
+
+    return useMutation<
+        CommonResponse<string>,           // server mengembalikan id section baru di `data`
+        Error,
+        CreateSectionVars,
+        { prev?: TaskList; tempId?: string }
+    >({
+        mutationKey: ['section-create', projectId],
+        mutationFn: async (vars) => {
+            if (!projectId) throw new Error('Project ID is required');
+            return ProjectService.addSection(projectId, { name: vars.name });
+        },
+
+        onMutate: async ({ name, beforeId = null, afterId = null }) => {
+            await qc.cancelQueries({ queryKey: key });
+            const prev = qc.getQueryData<TaskList>(key);
+            const tempId = `tmp-sec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+            if (prev) {
+                // Salin state lama
+                const next: TaskList = {
+                    ...prev,
+                    unlocated: prev.unlocated ?? [],
+                    sections: [...(prev.sections ?? [])],
+                };
+
+                // Ketik kuat: ini adalah tipe item di dalam sections
+                type SectionType = NonNullable<TaskList['sections']>[number];
+
+                // Section baru dengan tipe yang tepat (tanpa any)
+                const newSection: SectionType = {
+                    id: tempId,
+                    name,
+                    tasks: [] as Task[],
+                    // kalau SectionType punya properti lain, tambahkan default-nya di sini
+                };
+
+                // Sisipkan di posisi yang benar
+                const ids = (next.sections ?? []).map(s => s.id);
+                const ins = computeInsertIndex(ids, beforeId, afterId);
+
+                // Pastikan sections “definitely assigned” dan ketik kuat
+                const nextSections: NonNullable<TaskList['sections']> = [...(next.sections ?? [])];
+                nextSections.splice(ins, 0, newSection);
+
+                next.sections = nextSections;
+
+                qc.setQueryData<TaskList>(key, next);
+            }
+
+            return { prev, tempId };
+        },
+
+
+        onError: (_err, _vars, ctx) => {
+            if (ctx?.prev) qc.setQueryData<TaskList>(key, ctx.prev);
+            console.error('Section create failed');
+        },
+
+        onSuccess: (res, _vars, ctx) => {
+            const realId = res?.data;
+            if (!realId || !ctx?.tempId) return;
+
+            const cur = qc.getQueryData<TaskList>(key);
+            if (!cur) return;
+
+            const replaced: TaskList = {
+                ...cur,
+                sections: (cur.sections ?? []).map((s) =>
+                    s.id === ctx.tempId ? { ...s, id: realId } : s
+                ),
+            };
+
+            qc.setQueryData<TaskList>(key, replaced);
+        },
+
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey: key });
+        },
+
+        retry: (failureCount, error) => {
+            if (isForbiddenError(error)) return false;
+            return failureCount < 3 && !isClientError(error);
+        },
+    });
+};
+
+type DeleteSectionVars = {
+    sectionId: string;
+    includeTask: boolean;
+};
+export const useDeleteSectionAction = (projectId?: string) => {
+    const qc = useQueryClient();
+    const key = ['tasks', projectId] as const;
+
+    return useMutation<
+        CommonResponse<string>,
+        Error,
+        DeleteSectionVars,
+        { prev?: TaskList }
+    >({
+        mutationKey: ['section-delete', projectId],
+        mutationFn: async ({ sectionId, includeTask }) => {
+            if (!projectId) throw new Error('Project ID is required');
+            return ProjectService.deleteSection(projectId, { sectionId, includeTask });
+        },
+
+        onMutate: async ({ sectionId, includeTask }) => {
+            await qc.cancelQueries({ queryKey: key });
+            const prev = qc.getQueryData<TaskList>(key);
+            if (!prev) return { prev };
+
+            const next: TaskList = {
+                unlocated: [...(prev.unlocated ?? [])],
+                sections: [...(prev.sections ?? [])].map(s => ({
+                    ...s,
+                    tasks: [...(s.tasks ?? [])],
+                })),
+            };
+
+            const idx = next.sections.findIndex(s => s.id === sectionId);
+            if (idx === -1) return { prev };
+
+            const targetSection = next.sections[idx];
+            const sectionTasks = targetSection.tasks ?? [];
+
+            if (!includeTask && sectionTasks.length > 0) {
+                next.unlocated = [...next.unlocated, ...sectionTasks];
+            }
+            next.sections.splice(idx, 1);
+            qc.setQueryData<TaskList>(key, next);
+            return { prev };
+        },
+        onError: (error, _vars, ctx) => {
+            if (ctx?.prev) qc.setQueryData<TaskList>(key, ctx.prev);
+            if (!isForbiddenError(error)) {
+                console.error('Section delete failed:', error);
+            }
+        },
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey: key });
+        },
+        retry: (failureCount, error) => {
+            if (isForbiddenError(error)) return false;
+            return failureCount < MAX_RETRY_COUNT && !isClientError(error);
+        },
+    });
+};
 
 export const useUpdateSection = () => {
     const qc = useQueryClient()
@@ -646,3 +899,290 @@ export function useMoveTask(projectId: string) {
         },
     })
 }
+
+//task-detail
+export const useAddSubTask = (projectId: string, taskId: string) => {
+    const qc = useQueryClient()
+    const keyList   = qk.tasks(projectId)
+    const keyDetail = qk.task(projectId, taskId)
+    const handleError = useErrorHandler(projectId)
+
+    return useMutation<
+        CommonResponse<{ id: string }>,
+        Error,
+        AddSubTaskRequest,
+        { prevList?: TaskList; prevDetail?: Task | undefined; tempId?: string }
+    >({
+        mutationKey: ['subtask-add', projectId, taskId],
+        mutationFn: async (payload) => {
+            try {
+                return await ProjectService.addSubTask(taskId, payload)
+            } catch (error) {
+                handleError(error); throw error
+            }
+        },
+        onMutate: async (payload) => {
+            qc.cancelQueries({ queryKey: keyList })
+
+            const prevList   = qc.getQueryData<TaskList>(keyList)
+            const prevDetail = qc.getQueryData<Task>(keyDetail)
+
+            if (!prevList) return { prevList, prevDetail }
+
+            // clone aman
+            const next: TaskList = {
+                unlocated: [...(prevList.unlocated ?? [])],
+                sections: (prevList.sections ?? []).map(s => ({
+                    ...s,
+                    tasks: (s.tasks ?? []).map(t => ({ ...t, subTask: [...(t.subTask ?? [])] })),
+                })),
+            }
+
+            const allTasks = [
+                ...(next.unlocated ?? []),
+                ...(next.sections ?? []).flatMap(s => s.tasks ?? []),
+            ]
+            const t = allTasks.find(t => t.id === taskId)
+            if (!t) return { prevList, prevDetail }
+
+            const tempId = `tmp-sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+            const optimistic: NonNullable<Task['subTask']>[number] = {
+                id: tempId,
+                name: payload.name,
+                status: false,
+                dueDate: null,
+            }
+
+            t.subTask = [...(t.subTask ?? []), optimistic]
+            qc.setQueryData<TaskList>(keyList, next)
+
+            if (prevDetail) {
+                qc.setQueryData<Task>(keyDetail, {
+                    ...prevDetail,
+                    subTask: [...(prevDetail.subTask ?? []), optimistic],
+                })
+            }
+
+            return { prevList, prevDetail, tempId }
+        },
+        onError: (_e, _vars, ctx) => {
+            if (ctx?.prevList)   qc.setQueryData<TaskList>(keyList, ctx.prevList)
+            if (ctx?.prevDetail) qc.setQueryData<Task>(keyDetail, ctx.prevDetail)
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: keyList })
+            qc.invalidateQueries({ queryKey: keyDetail })
+        },
+    })
+}
+
+export const useUpdateSubTask = (projectId: string) => {
+    const qc = useQueryClient()
+    const keyList = qk.tasks(projectId)
+    const handleError = useErrorHandler(projectId)
+
+    return useMutation<
+        CommonResponse<unknown>,
+        Error,
+        { taskId: string; subtaskId: string; payload: UpdateSubTaskRequest },
+        { prevList?: TaskList; prevDetail?: Task | undefined }
+    >({
+        mutationKey: ['subtask-update', projectId],
+        mutationFn: async ({ subtaskId, payload }) => {
+            try {
+                return await ProjectService.updateSubTask(subtaskId, payload)
+            } catch (error) {
+                handleError(error); throw error
+            }
+        },
+        onMutate: async ({ taskId, subtaskId, payload }) => {
+            qc.cancelQueries({ queryKey: keyList })
+
+            const prevList   = qc.getQueryData<TaskList>(keyList)
+            const prevDetail = qc.getQueryData<Task>(qk.task(projectId, taskId))
+
+            if (prevList) {
+                const next: TaskList = {
+                    unlocated: [...(prevList.unlocated ?? [])],
+                    sections: (prevList.sections ?? []).map(s => ({
+                        ...s,
+                        tasks: (s.tasks ?? []).map(t =>
+                            t.id === taskId
+                                ? { ...t, subTask: (t.subTask ?? []).map(st => st.id === subtaskId ? { ...st, ...payload } : st) }
+                                : t
+                        ),
+                    })),
+                }
+                qc.setQueryData<TaskList>(keyList, next)
+            }
+
+            if (prevDetail) {
+                const nextDetail: Task = {
+                    ...prevDetail,
+                    subTask: (prevDetail.subTask ?? []).map(st =>
+                        st.id === subtaskId ? { ...st, ...payload } : st
+                    ),
+                }
+                qc.setQueryData<Task>(qk.task(projectId, taskId), nextDetail)
+            }
+
+            return { prevList, prevDetail }
+        },
+        onError: (_e, vars, ctx) => {
+            if (ctx?.prevList)   qc.setQueryData<TaskList>(keyList, ctx.prevList)
+            if (ctx?.prevDetail) qc.setQueryData<Task>(qk.task(projectId, vars.taskId), ctx.prevDetail)
+        },
+        onSuccess: (_res, vars) => {
+            qc.invalidateQueries({ queryKey: keyList })
+            qc.invalidateQueries({ queryKey: qk.task(projectId, vars.taskId) })
+        },
+    })
+}
+
+export const useDeleteSubTask = (projectId: string) => {
+    const qc = useQueryClient()
+    const keyList = qk.tasks(projectId)
+    const handleError = useErrorHandler(projectId)
+
+    return useMutation<
+        CommonResponse<null>,
+        Error,
+        { taskId: string; subtaskId: string },
+        { prevList?: TaskList; prevDetail?: Task | undefined }
+    >({
+        mutationKey: ['subtask-delete', projectId],
+        mutationFn: async ({ subtaskId }) => {
+            try {
+                return await ProjectService.deleteSubTask(subtaskId)
+            } catch (error) {
+                handleError(error); throw error
+            }
+        },
+        onMutate: async ({ taskId, subtaskId }) => {
+            qc.cancelQueries({ queryKey: keyList })
+
+            const prevList   = qc.getQueryData<TaskList>(keyList)
+            const prevDetail = qc.getQueryData<Task>(qk.task(projectId, taskId))
+
+            if (prevList) {
+                const next: TaskList = {
+                    unlocated: [...(prevList.unlocated ?? [])],
+                    sections: (prevList.sections ?? []).map(s => ({
+                        ...s,
+                        tasks: (s.tasks ?? []).map(t =>
+                            t.id === taskId
+                                ? { ...t, subTask: (t.subTask ?? []).filter(d => d.id !== subtaskId) }
+                                : t
+                        ),
+                    })),
+                }
+                qc.setQueryData<TaskList>(keyList, next)
+            }
+
+            if (prevDetail) {
+                const nextDetail: Task = {
+                    ...prevDetail,
+                    subTask: (prevDetail.subTask ?? []).filter(d => d.id !== subtaskId),
+                }
+                qc.setQueryData<Task>(qk.task(projectId, taskId), nextDetail)
+            }
+
+            return { prevList, prevDetail }
+        },
+        onError: (_e, vars, ctx) => {
+            if (ctx?.prevList)   qc.setQueryData<TaskList>(keyList, ctx.prevList)
+            if (ctx?.prevDetail) qc.setQueryData<Task>(qk.task(projectId, vars.taskId), ctx.prevDetail)
+        },
+        onSuccess: (_res, vars) => {
+            qc.invalidateQueries({ queryKey: keyList })
+            qc.invalidateQueries({ queryKey: qk.task(projectId, vars.taskId) })
+        },
+    })
+}
+
+export function useMoveSubTask(projectId: string) {
+    const qc = useQueryClient()
+    const keyList = qk.tasks(projectId)
+    const handleError = useErrorHandler(projectId)
+
+    return useMutation<
+        CommonResponse<{ id: string; rank?: string }>,
+        Error,
+        { taskId: string; subtaskId: string; payload: MoveSubTaskPayload },
+        { prevList?: TaskList; prevDetail?: Task | undefined; keyDetail?: readonly unknown[] }
+    >({
+        mutationKey: ['subtask-move', projectId],
+        mutationFn: async ({ subtaskId, payload }) => {
+            try {
+                return await ProjectService.moveSubTask(subtaskId, payload)
+            } catch (err) { handleError(err); throw err }
+        },
+
+        async onMutate({ taskId, subtaskId, payload }) {
+            // ✅ cancel keduanya & di-await
+            const keyDetail = qk.task(projectId, taskId)
+            await Promise.all([
+                qc.cancelQueries({ queryKey: keyList }),
+                qc.cancelQueries({ queryKey: keyDetail }),
+            ])
+
+            const prevList   = qc.getQueryData<TaskList>(keyList)
+            const prevDetail = qc.getQueryData<Task>(keyDetail)
+
+            const applyReorder = (subTasks: NonNullable<Task['subTask']>) => {
+                const fromIdx = subTasks.findIndex(st => st.id === subtaskId)
+                if (fromIdx < 0) return subTasks
+
+                const moving = subTasks[fromIdx]
+                const rest   = [...subTasks.slice(0, fromIdx), ...subTasks.slice(fromIdx + 1)]
+
+                const rawB = payload.beforeId ?? null
+                const rawA = payload.afterId  ?? null
+                const beforeId = rawB === subtaskId ? null : rawB
+                const afterId  = rawA === subtaskId ? null : rawA
+
+                const ids = rest.map(s => s.id)
+                const insertIdx = computeInsertIndex(ids, beforeId, afterId)
+                return insertAt(rest, insertIdx, moving)
+            }
+
+            if (prevList) {
+                const next: TaskList = {
+                    unlocated: [...(prevList.unlocated ?? [])],
+                    sections: (prevList.sections ?? []).map(s => ({
+                        ...s,
+                        tasks: (s.tasks ?? []).map(t =>
+                            t.id === taskId && t.subTask
+                                ? { ...t, subTask: applyReorder(t.subTask) }
+                                : t
+                        ),
+                    })),
+                }
+                qc.setQueryData<TaskList>(keyList, next)
+            }
+
+            if (prevDetail?.subTask) {
+                qc.setQueryData<Task>(keyDetail, { ...prevDetail, subTask: applyReorder(prevDetail.subTask) })
+            }
+
+            return { prevList, prevDetail, keyDetail }
+        },
+
+        onError(_e, _vars, ctx) {
+            if (ctx?.prevList)   qc.setQueryData<TaskList>(keyList, ctx.prevList)
+            if (ctx?.prevDetail && ctx?.keyDetail) qc.setQueryData<Task>(ctx.keyDetail, ctx.prevDetail)
+        },
+
+        onSuccess(res, vars) {
+            // (Opsional) kalau server kirim rank terbaru, bisa merge di cache di sini.
+            qc.invalidateQueries({ queryKey: keyList })
+            qc.invalidateQueries({ queryKey: qk.task(projectId, vars.taskId) })
+        },
+
+        retry: (n, err) => !isForbiddenError(err) && n < MAX_RETRY_COUNT && !isClientError(err),
+    })
+}
+
+
+
+
