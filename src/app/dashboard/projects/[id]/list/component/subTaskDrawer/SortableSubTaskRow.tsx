@@ -306,8 +306,8 @@ export default function SortableSubtaskRow({ item, handlers, taskId }: Props) {
                             }
                         }}
                         className={cn(
-                            "w-60 flex-1 text-left text-sm truncate px-1 cursor-text rounded-sm transition-all hover:bg-accent/30",
-                            item.status && "line-through text-muted-foreground"
+                            "w-60 font-semibold text-primary flex-1 text-left text-sm truncate px-1 cursor-text rounded-sm transition-all hover:bg-accent/30",
+                            item.status && "text-muted-foreground"
                         )}
                         title={item.name}
                         aria-label="Edit nama subtugas"
@@ -373,7 +373,7 @@ export default function SortableSubtaskRow({ item, handlers, taskId }: Props) {
                             setIsCalendarOpen(true);
                         }
                     }}
-                    className="font-medium text-foreground text-sm cursor-pointer hover:text-primary transition-colors"
+                    className="font-semibold text-foreground text-sm cursor-pointer hover:text-primary transition-colors"
                     title="Ubah tenggat subtugas"
                 >
                   <p className={cn("text-xs", isOverdue(dueDate) && "text-red-500")}>

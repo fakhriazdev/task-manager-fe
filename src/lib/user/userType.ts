@@ -11,6 +11,11 @@ export interface User {
     accessRegionIds:AccessRegions[]
 }
 
+export interface UserMinimal {
+    nik: string ;
+    nama: string;
+}
+
 export interface NewUser {
     nik: string ;
     nama: string;

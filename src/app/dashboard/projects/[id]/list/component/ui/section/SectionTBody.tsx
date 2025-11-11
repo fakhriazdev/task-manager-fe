@@ -200,16 +200,25 @@ export function SectionTBody({
             className={`divide-x divide-border ${isOver ? 'bg-primary/5 transition-colors' : ''} ${sectionDragging ? 'ring-2 ring-primary/30' : ''} ${isPending ? 'opacity-60' : ''}`}
         >
             {/* Section Header Row */}
-            <TableRow className="bg-card">
+            <TableRow className="bg-card relative">
                 <TableCell colSpan={5}>
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                        {/* jadikan wrapper ini sebagai group */}
+                        <div className="group/name flex items-center min-w-0 flex-1 gap-1">
                             <button
                                 ref={setSectionHandleRef}
                                 {...(!dragDisabled ? { ...sectionAttrs, ...sectionListeners } : {})}
-                                className={`shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-muted rounded p-0.5 transition-opacity ${
-                                    dragDisabled ? 'opacity-40 cursor-not-allowed' : ''
-                                }`}
+                                className={[
+                                    // hidden by default
+                                    'opacity-0 pointer-events-none',
+                                    // show saat hover nama/row
+                                    'group-hover/name:opacity-100 group-hover/name:pointer-events-auto',
+                                    // aksesibilitas
+                                    'focus-visible:opacity-100 focus-visible:pointer-events-auto',
+                                    // style lainnya
+                                    'shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-transparent rounded transition-opacity',
+                                    dragDisabled ? 'opacity-40 cursor-not-allowed' : '',
+                                ].join(' ')}
                                 aria-label="Drag section"
                                 title={dragDisabled ? 'Drag disabled while editing or saving' : 'Drag section'}
                                 type="button"
@@ -220,8 +229,27 @@ export function SectionTBody({
                             >
                                 <GripVertical size={16} />
                             </button>
+                            {!editing && (
+                                <button
+                                    type="button"
+                                    onClick={() => onToggle?.(section.id)}
+                                    aria-expanded={!collapsed}
+                                    aria-controls={`sec-${section.id}-rows`}
+                                    className={[
+                                        'p-1 rounded hover:bg-muted focus-visible:outline-none',
+                                        menuOpen ? 'opacity-100 pointer-events-auto' : '',
+                                    ].join(' ')}
+                                    title={collapsed ? 'Expand section' : 'Collapse section'}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                    <ChevronDown
+                                        size={16}
+                                        className={`transition-transform ${collapsed ? '-rotate-90' : 'rotate-0'}`}
+                                    />
+                                </button>
+                            )}
 
-                            <div className="relative flex items-center min-w-0 flex-1 group/name">
+                            <div className="relative flex items-center min-w-0 flex-1">
                                 <SectionName
                                     name={section.name}
                                     editing={editing}
@@ -250,26 +278,6 @@ export function SectionTBody({
                                                 onOpenChange={setMenuOpen}
                                             />
                                         </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => onToggle?.(section.id)}
-                                            aria-expanded={!collapsed}
-                                            aria-controls={`sec-${section.id}-rows`}
-                                            className={[
-                                                'transition-opacity p-1 rounded hover:bg-muted focus-visible:outline-none',
-                                                'opacity-0 pointer-events-none',
-                                                'group-hover/name:opacity-100 group-hover/name:pointer-events-auto',
-                                                menuOpen ? 'opacity-100 pointer-events-auto' : '',
-                                            ].join(' ')}
-                                            title={collapsed ? 'Expand section' : 'Collapse section'}
-                                            onMouseDown={(e) => e.stopPropagation()}
-                                        >
-                                            <ChevronDown
-                                                size={16}
-                                                className={`transition-transform ${collapsed ? '-rotate-90' : 'rotate-0'}`}
-                                            />
-                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -283,6 +291,7 @@ export function SectionTBody({
                     </div>
                 </TableCell>
             </TableRow>
+
 
             {/* Task Rows - NO SortableContext wrapper */}
             {collapsed ? (

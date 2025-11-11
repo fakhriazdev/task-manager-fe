@@ -1,7 +1,7 @@
 import axiosInstance from "@/api/AxiosInstance";
 import {
     AddSubTaskRequest,
-    CommonResponse, CreateTaskProjectRequest, DeleteSectionRequest,
+    CommonResponse, CreateProjectPayload, CreateTaskProjectRequest, DeleteSectionRequest,
     MoveSectionPayload, MoveSubTaskPayload,
     MoveTaskPayload,
     Project,
@@ -14,6 +14,13 @@ import {
 const baseURL = '/api/projects';
 
 const ProjectService = {
+    addProject:async (payload:CreateProjectPayload):Promise<CommonResponse<{ projectId:string }>> => {
+        const {data} = await axiosInstance.post(baseURL, payload);
+        if (data.statusCode !== 201 && data.statusCode !== 200) {
+            throw new Error(data.message);
+        }
+        return data
+    },
     getOwnProject: async (): Promise<CommonResponse<Project[]>> => {
         const {data} = await axiosInstance.get(`${baseURL}`);
         if (data.statusCode !== 202 && data.statusCode !== 200) {

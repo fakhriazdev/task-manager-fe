@@ -1,5 +1,5 @@
 import axiosInstance from "@/api/AxiosInstance";
-import {User, CommonResponse, NewUser, UpdatePassword} from "@/lib/user/userType";
+import {User, CommonResponse, NewUser, UpdatePassword, UserMinimal} from "@/lib/user/userType";
 import {UserUpdate} from "@/app/dashboard/members/schemas/schemas";
 
 const baseURL = '/api/users';
@@ -12,10 +12,15 @@ const StoreService = {
         }
         return data
     },
-
+    getUserContains: async (nik:string): Promise<CommonResponse<UserMinimal[]>> => {
+        const {data} = await axiosInstance.get(`${baseURL}/contains/${nik}`);
+        if(data.statusCode !== 200 && data.statusCode !== 201){
+            throw new Error(data.message);
+        }
+        return data;
+    },
     add: async (payload: NewUser): Promise<CommonResponse<string>> => {
         const { data } = await axiosInstance.post(`${baseURL}/add`, payload);
-        console.log(data)
         if (data.statusCode !== 200 && data.statusCode !== 201) {
             throw new Error(data.message);
         }

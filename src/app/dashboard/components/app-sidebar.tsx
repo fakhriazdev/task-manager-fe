@@ -110,7 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             title={group.title}
                             items={group.items}
                             onAdd={
-                                group.title === 'Projects' ? () => setOpen('projects') : undefined
+                                group.title === 'Projects' ? () => setOpen('project') : undefined
                             }
                         />
                     ))}

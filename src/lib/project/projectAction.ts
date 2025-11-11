@@ -3,9 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import type { CommonResponse } from '@/lib/store/storeTypes'
-import type {
+import {
     AddSubTaskRequest,
-    AssigneeInput,
+    AssigneeInput, CreateProjectPayload,
     MoveSectionPayload, MoveSubTaskPayload,
     MoveTaskPayload,
     Project,
@@ -18,6 +18,7 @@ import type {
 import ProjectService from '@/lib/project/projectService'
 import { Assignees } from "@/app/dashboard/projects/[id]/list/types/task"
 import {useMemo} from 'react'
+import {toast} from "sonner";
 
 
 // CONSTANTS & CONFIG
@@ -234,6 +235,41 @@ export function useProjectAction() {
         },
     })
 }
+
+export function useNewProjectAction() {
+    const qc = useQueryClient();
+    const router = useRouter();
+    const handleError = useErrorHandler();
+
+    return useMutation<CommonResponse<{ projectId:string }>, Error, CreateProjectPayload>({
+        mutationKey: ['project-create'],
+        mutationFn: async (payload) => {
+            try {
+                return await ProjectService.addProject(payload);
+            } catch (error) {
+                handleError(error);
+                throw error;
+            }
+        },
+        onMutate: () => toast.loading("Creating Project..."),
+        onSuccess: (res) => {
+            toast.dismiss();
+            qc.invalidateQueries({ queryKey: qk.projects() });
+            const id = res.data?.projectId;
+            if (id) {
+                router.push(`/dashboard/projects/${id}`);
+            }
+            toast.success("Project Successfully created!");
+        },
+        onError: (error) => {
+            if (!isForbiddenError(error)) {
+                console.error('Project create failed:', error);
+            }
+        },
+    });
+}
+
+
 
 export function useProjectDetailAction(idProject?: string) {
     const handleError = useErrorHandler(idProject)

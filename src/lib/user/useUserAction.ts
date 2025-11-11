@@ -1,5 +1,5 @@
 import {useMutation, UseMutationResult, useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
-import {User, CommonResponse, NewUser, UpdatePassword} from "@/lib/user/userType";
+import {User, CommonResponse, NewUser, UpdatePassword, UserMinimal} from "@/lib/user/userType";
 import UserService from "@/lib/user/userService";
 import {UserUpdate} from "@/app/dashboard/members/schemas/schemas";
 import {toast} from "sonner";
@@ -13,6 +13,19 @@ export function useUserAction(): UseQueryResult<User[], Error> {
         queryKey: ['users'],
         queryFn: async () => {
             const response: CommonResponse<User[]> = await UserService.getUsers();
+            return response.data ?? [];
+        },
+    });
+}
+export function useUserContainsAction(
+    nik: string,
+    opts?: { enabled?: boolean }
+): UseQueryResult<UserMinimal[], Error> {
+    return useQuery<UserMinimal[], Error>({
+        queryKey: ["usersContains", nik],
+        enabled: (!!nik && nik.length > 0) && (opts?.enabled ?? true),
+        queryFn: async () => {
+            const response: CommonResponse<UserMinimal[]> = await UserService.getUserContains(nik);
             return response.data ?? [];
         },
     });

@@ -1,4 +1,6 @@
 //Payload
+import {ERoleProject, TProjectRole} from "@/app/dashboard/components/AddOrEditProjectDialog";
+
 export type MoveSectionPayload = { beforeId?: string | null; afterId?: string | null }
 export type MoveTaskPayload = { targetSectionId?: string | null; beforeId?: string | null; afterId?: string | null; };
 export type MoveSubTaskPayload = { beforeId?: string | null; afterId?: string | null };
@@ -31,6 +33,16 @@ export interface Project {
     id:string;
     name: string ;
     color: string;
+}
+
+export interface CreateProjectPayload {
+    name: string ;
+    desc: string ;
+    members:{
+        nik: string ;
+        nama: string ;
+        role: TProjectRole;
+    }[]
 }
 
 //project Detail

@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Check } from "lucide-react";
+import { Check, UserRoundPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useProjectDetailAction } from "@/lib/project/projectAction";
 
@@ -42,15 +42,59 @@ function AvatarStack({ assignees }: { assignees?: AssigneeInput[] | null }) {
     const list = assignees ?? [];
     const top3 = list.slice(0, 3);
     const extra = Math.max(list.length - 3, 0);
+
+    if (list.length === 0) {
+        // Empty state: plus avatar menjadi trigger popover
+        return (
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    aria-label="Tambah assignee"
+                    className="cursor-pointer disabled:cursor-not-allowed"
+                >
+                    <Avatar
+                        className="h-7 w-7 ring-2 ring-background bg-muted cursor-pointer"
+                        title="Tambah assignee"
+                    >
+                        <AvatarFallback className="p-0 pointer-events-none">
+                            <UserRoundPlus className="h-3.5 w-3.5 pointer-events-none" aria-hidden="true" />
+                        </AvatarFallback>
+                    </Avatar>
+                </button>
+            </PopoverTrigger>
+
+        );
+    }
+
     return (
         <div className="flex items-center -space-x-2">
             {top3.map((a) => (
-                <Avatar key={a.nik} className="h-6 w-6 ring-2 ring-background" title={a.name}>
-                    <AvatarFallback className="text-[10px] font-semibold">{initials(a.name)}</AvatarFallback>
+                <Avatar key={a.nik} className="h-7 w-7 ring-2 ring-background" title={a.name}>
+                    {/* conditional avatar image */}
+                    {/*{a?.avatarUrl ? <AvatarImage src={a.avatarUrl} alt={a.name} /> : null}*/}
+                    {/* fallback initials tetap */}
+                    <AvatarFallback className="text-[10px] font-semibold">
+                        {initials(a?.name ?? '')}
+                    </AvatarFallback>
                 </Avatar>
             ))}
+
+            {/* PLUS avatar sebagai trigger popover */}
+            <PopoverTrigger asChild>
+                <button type="button" aria-label="Tambah assignee">
+                    <Avatar
+                        className="h-7 w-7 ring-2 ring-background bg-muted cursor-pointer disabled:cursor-not-allowed"
+                        title="Tambah assignee"
+                    >
+                        <AvatarFallback className="p-0">
+                            <UserRoundPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                        </AvatarFallback>
+                    </Avatar>
+                </button>
+            </PopoverTrigger>
+
             {extra > 0 && (
-                <Avatar className="h-6 w-6 ring-2 ring-background bg-muted" title={`+${extra} more`}>
+                <Avatar className="h-7 w-7 ring-2 ring-background bg-muted" title={`+${extra} more`}>
                     <AvatarFallback className="text-[10px]">+{extra}</AvatarFallback>
                 </Avatar>
             )}
@@ -81,7 +125,6 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
     }, [project]);
 
     // 2) Local selection (nik) + sync dari server
-    //    ⬇️ seedAssignees distabilkan dengan useMemo agar tak berubah setiap render
     const seedAssignees = useMemo(
         () => (task.assignees ?? []) as AssigneeInput[],
         [task.assignees]
@@ -106,7 +149,7 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
         [members, localSet]
     );
 
-    // ⬇️ Map nama assignee saat ini, dimemo supaya stabil untuk deps useCallback
+    // Map nama assignee saat ini, dimemo supaya stabil
     const currentNameMap = useMemo(
         () => new Map(seedAssignees.map((a) => [normNik(a.nik), String(a.name ?? "").trim()])),
         [seedAssignees]
@@ -145,8 +188,8 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
     if (isLoading) {
         return (
             <div className={cn("flex items-center gap-2", className)}>
-                <Skeleton className="h-6 w-6 rounded-full" />
-                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-7 w-7 rounded-full" />
+                <Skeleton className="h-7 w-16" />
             </div>
         );
     }
@@ -156,26 +199,22 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    disabled={disabled}
-                    className={cn(
-                        "w-full h-7 inline-flex items-center gap-2 rounded px-1.5 py-0.5 hover:bg-muted/60",
-                        disabled && "opacity-60",
-                        className
-                    )}
-                >
-                    {members?.length ? (
-                        // ✅ Aman: AvatarStack menerima undefined/null
-                        <AvatarStack assignees={task.assignees} />
-                    ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="h-3.5 w-3.5" /> Assign
-            </span>
-                    )}
-                </button>
-            </PopoverTrigger>
+            {/* Container biasa; trigger ada di ikon “+” di dalam AvatarStack */}
+            <div
+                className={cn(
+                    "h-7 inline-flex items-center gap-2 rounded border-none px-1.5 py-1.5",
+                    disabled && "opacity-60",
+                    className
+                )}
+            >
+                {members?.length ? (
+                    <AvatarStack assignees={task.assignees} />
+                ) : (
+                    // Jika belum ada daftar member project, tetap tampilkan plus trigger
+                    <AvatarStack assignees={[]} />
+                )}
+            </div>
+
             <PopoverContent className="p-0 w-[320px]" align="start">
                 <Command>
                     <div className="px-2 pt-2 pb-0">

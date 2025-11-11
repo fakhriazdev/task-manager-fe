@@ -25,7 +25,7 @@ import { useProjectStore } from '@/lib/stores/useProjectStore'
 import { Button } from '@/components/ui/button'
 import type { Task } from '@/lib/project/projectTypes'
 import SubTaskRow from '@/app/dashboard/projects/[id]/list/component/ui/rows/SubTaskRow'
-import { cn, formatDateTime2 } from '@/lib/utils'
+import {cn, formatDateTime2, isOverdue} from '@/lib/utils'
 import AssigneePicker from "@/app/dashboard/projects/[id]/list/component/AssigneePicker";
 
 
@@ -33,11 +33,6 @@ export type TaskTRProps = {
     task: Task
     projectId: string        // wajib → jaga key React Query konsisten
     disableDrag?: boolean
-}
-
-export function TaskRowGuard(props: Omit<TaskTRProps, 'projectId'> & { projectId?: string }) {
-    if (!props.projectId) return null
-    return <TaskRow {...(props as TaskTRProps)} />
 }
 
 export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: TaskTRProps) {
@@ -150,22 +145,31 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                     aria-grabbed={isDragging || undefined}
                 >
                     {/* Col 1: Drag, expand, name+status, open detail */}
-                    <TableCell className="p-0" colSpan={2}>
-                        <div className="h-full py-2 pr-3 pl-5 flex items-center gap-2 min-w-0 group/item">
+                    <TableCell className="p-2" colSpan={2}>
+                        <div className="h-full flex items-center gap-1 min-w-0 group/item">
                             <button
                                 ref={setActivatorNodeRef}
                                 {...(!dragDisabled ? { ...attributes, ...listeners } : {})}
                                 style={!dragDisabled ? { touchAction: 'none' } : undefined}
-                                className="shrink-0 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted
-              transition-colors cursor-grab active:cursor-grabbing
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
-              disabled:opacity-40 disabled:cursor-not-allowed"
+                                type="button"
                                 aria-label={dragDisabled ? 'Drag disabled' : 'Drag task'}
                                 disabled={dragDisabled}
-                                type="button"
+                                className={cn(
+                                    // base style
+                                    'shrink-0 rounded text-muted-foreground hover:text-foreground hover:bg-transparent',
+                                    'transition-colors cursor-grab active:cursor-grabbing',
+                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                                    'disabled:opacity-40 disabled:cursor-not-allowed',
+
+                                    // hidden by default, show on row hover (via group/item), on focus, or while dragging
+                                    !dragDisabled && !isDragging && 'opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto',
+                                    !dragDisabled && 'focus:opacity-100 focus:pointer-events-auto',
+                                    isDragging && 'opacity-100 pointer-events-auto'
+                                )}
                             >
                                 <GripVertical size={16} />
                             </button>
+
 
                             {hasSubtasks && (
                                 <Button
@@ -182,7 +186,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                                 </Button>
                             )}
 
-                            <div className="flex-1 min-w-0">
+                            <div className={`flex-1 min-w-0 ${!hasSubtasks && "ml-2"}`}>
                                 <TaskName
                                     name={tempName}
                                     lengthSubTask={task.subTask?.length ?? 0}
@@ -225,9 +229,18 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
 
 
                     {/* Col 3: Due date */}
-                    <TableCell className="text-xs py-2 px-2">
+                    <TableCell className="text-xs font-semibold">
                         <div className="h-full flex items-center justify-center text-center">
-                            {task?.dueDate ? formatDateTime2(task.dueDate) : ''}
+                            {task?.dueDate ? (
+                                <p
+                                    className={cn(
+                                        'text-xs',
+                                        isOverdue(task.dueDate) && 'text-red-500'
+                                    )}
+                                >
+                                    {formatDateTime2(task.dueDate)}
+                                </p>
+                            ) : ''}
                         </div>
                     </TableCell>
 
@@ -235,7 +248,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                     <TableCell className="py-2 pl-2 align-middle">
                         {task.creator?.nama && (
                             <Avatar
-                                className="h-6 w-6 ring-2 ring-background"
+                                className="h-7 w-7 ring-2 ring-background"
                                 title={`Creator ${task.creator.nama}`}
                             >
                                 <AvatarImage src="" alt={task.creator.nama} draggable={false} />
@@ -350,8 +363,8 @@ const TaskName = memo(function TaskName({
                     {/* nama + badge subtask */}
                     <button
                         type="button"
-                        className={`flex-1 min-w-0 text-left inline-flex items-center gap-1 px-1 -mx-1 py-0.5 rounded cursor-text ${
-                            status ? 'line-through text-muted-foreground' : ''
+                        className={`font-semibold flex-1 min-w-0 text-left inline-flex items-center gap-1 px-1 -mx-1 py-0.5 rounded cursor-text ${
+                            status ? 'text-muted-foreground/80' : 'text-primary'
                         }`}
                         title={name}
                         onClick={(e) => {

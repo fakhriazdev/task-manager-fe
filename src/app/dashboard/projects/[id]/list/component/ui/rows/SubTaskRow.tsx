@@ -136,6 +136,7 @@ function SubTaskRowItem({
         isDragging,
     } = useSortable({ id: subtask.id })
 
+
     const { mutate: updateSubtask } = useUpdateSubTask(projectId)
 
     const style: CSSProperties = useMemo(
@@ -218,31 +219,55 @@ function SubTaskRowItem({
             style={style}
             className="select-none h-10 border-b last:border-0 hover:bg-muted/40"
         >
-            <TableCell colSpan={2} className="p-0 border-l border-border first:border-l-0">
-                <div className="pl-14 h-full flex items-center gap-2 group/item">
+            <TableCell colSpan={2} className="p-2 border-l border-border first:border-l-0">
+                <div className="h-full flex items-center gap-2 group/item">
                     <button
                         ref={setActivatorNodeRef}
-                        {...attributes}
-                        {...listeners}
-                        className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                        aria-label="Drag subtask"
+                        {...(!editing ? { ...attributes, ...listeners } : {})}
                         type="button"
+                        aria-label="Drag subtask"
+                        style={{ touchAction: 'none' }}
+                        className={cn(
+                            'shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-transparent',
+                            'cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+
+                            // hidden by default; show on row hover/focus
+                            'opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto',
+                            'focus:opacity-100 focus:pointer-events-auto',
+
+                            // while dragging, always visible
+                            isDragging && 'opacity-100 pointer-events-auto',
+
+                            // opsional: di mobile (<md) selalu terlihat
+                            'md:opacity-0 md:pointer-events-none md:group-hover/item:opacity-100 md:group-hover/item:pointer-events-auto',
+                            editing && 'opacity-40 cursor-not-allowed'
+                        )}
+                        disabled={editing}
                     >
                         <GripVertical size={14} />
                     </button>
+
 
                     <button
                         onClick={handleToggleStatus}
                         className={`size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                             subtask.status
                                 ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-600 hover:border-emerald-600'
-                                : 'border-dashed border-muted-foreground/60 hover:border-emerald-500 hover:bg-emerald-500/10'
+                                : ' border-dashed border-muted-foreground/60 hover:border-emerald-500 hover:bg-emerald-500/10'
                         }`}
                         aria-pressed={!!subtask.status}
                         aria-label={subtask.status ? 'Tandai belum selesai' : 'Tandai selesai'}
                         type="button"
                     >
-                        {subtask.status && <CircleCheck className="text-white w-4" aria-hidden />}
+                        {subtask.status && <CircleCheck
+                            className={cn(
+                                'w-4 h-4 text-black dark:text-white',
+                                subtask.status
+                                    ? 'border-emerald-500 hover:border-emerald-600'
+                                    : 'border-dashed border-muted-foreground/60 hover:border-emerald-500 hover:text-emerald-600',
+                            )}
+                            aria-hidden
+                        />}
                     </button>
 
                     {editing ? (
@@ -264,7 +289,7 @@ function SubTaskRowItem({
                     ) : (
                         <span
                             onClick={() => setEditing(true)}
-                            className="text-sm truncate hover:underline cursor-text flex-1"
+                            className={`text-sm font-semibold truncate cursor-text flex-1 ${subtask.status ? 'text-muted-foreground/80': 'text-primary'}`}
                             title={subtask.name}
                         >
               {subtask.name}
@@ -277,7 +302,7 @@ function SubTaskRowItem({
                 <div className="h-full py-1 px-2" />
             </TableCell>
 
-            <TableCell className="text-xs text-center item-center p-0 border-l border-border">
+            <TableCell className="text-xs font-semibold text-center item-center p-0 border-l border-border">
                 {subtask?.dueDate ? (
                     <p
                         className={cn(

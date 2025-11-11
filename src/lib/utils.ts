@@ -5,17 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/**
- * Format ISO date string ke format lokal Indonesia
- * @param isoString ISO 8601 string (contoh: "2025-08-31T16:07:43.788Z")
- * @param withTime default true → tampilkan jam, menit, detik
- * @returns string tanggal terformat
- */
-/**
- * Format ISO date string ke "YYYY-MM-DD HH:mm:ss"
- * @param isoString ISO 8601 string atau Date object
- * @returns string
- */
+
 export function formatDateTime(isoString: string | Date): string {
   const date = typeof isoString === "string" ? new Date(isoString) : isoString
 

@@ -18,12 +18,11 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { cn } from "@/lib/utils"
-import { Copy, ChevronDown } from "lucide-react"
+import { Copy } from "lucide-react"
 
 // ===== Types =====
-export type MemberRole = "viewer" | "commenter" | "editor" | "admin"
+export type MemberRole = "READ" | "EDITOR"
 export type Member = {
     id: string | number
     name: string
@@ -31,14 +30,6 @@ export type Member = {
     avatarUrl?: string
     role: MemberRole
     isGuest?: boolean
-}
-
-type Invite = {
-    id: string | number
-    name: string
-    email: string
-    code?: string // mis. 141183091
-    status: "waiting" | "expired" | "accepted"
 }
 
 export type DialogInvitationProps = {
@@ -68,26 +59,21 @@ function RoleSelect({
                 <SelectValue placeholder="Peran" />
             </SelectTrigger>
             <SelectContent align="end">
-                <SelectItem value="viewer">Viewer</SelectItem>
-                <SelectItem value="commenter">Commenter</SelectItem>
-                <SelectItem value="editor">Editor</SelectItem>
-                <SelectItem value="admin">Admin proyek</SelectItem>
+                <SelectItem value="EDITOR">Editor</SelectItem>
+                <SelectItem value="READ">Read</SelectItem>
             </SelectContent>
         </Select>
     )
 }
 
 // Dummy data riwayat undangan (ganti dari API jika ada)
-const invites: Invite[] = [
-    { id: 1, name: "Taufan", email: "taufan@gmail.com", code: "141183091", status: "waiting" },
-    { id: 2, name: "Joko", email: "joko@gmail.com", code: "141183091", status: "expired" },
-]
+
 
 export default function DialogInvitation(props: DialogInvitationProps) {
     const {
         projectName = "MEMBERSHIP",
         members: initialMembers,
-        defaultInviteRole = "editor",
+        defaultInviteRole = "EDITOR",
         onInvite,
         onChangeRole,
         onRemove,
@@ -98,14 +84,13 @@ export default function DialogInvitation(props: DialogInvitationProps) {
     // state dialog
     const [open, setOpen] = React.useState(false)
     // state collapsible RIWAYAT (terpisah agar dialog tidak tertutup)
-    const [invitesOpen, setInvitesOpen] = React.useState(true)
 
     const [email, setEmail] = React.useState("")
     const [inviteRole, setInviteRole] = React.useState<MemberRole>(defaultInviteRole)
     const [members, setMembers] = React.useState<Member[]>(
         initialMembers ?? [
-            { id: 2, name: "Heru Baskoro", email: "heru.it@amscorp.co.id", avatarUrl: "/avatars/03.png", role: "admin" },
-            { id: 3, name: "fakhriaz dev", email: "fakhriazdev@gmail.com", role: "editor", isGuest: true },
+            { id: 2, name: "Heru Baskoro", email: "heru.it@amscorp.co.id", avatarUrl: "/avatars/03.png", role: "READ" },
+            { id: 3, name: "fakhriaz dev", email: "fakhriazdev@gmail.com", role: "EDITOR", isGuest: true },
         ]
     )
 
@@ -152,22 +137,22 @@ export default function DialogInvitation(props: DialogInvitationProps) {
                 </DialogHeader>
 
                 {/* Invite row */}
-                <div className="px-6 pt-4">
+                <div className="w-full px-6 pt-4">
                     <div className="flex gap-3">
                         <div className="flex-1">
                             <Label htmlFor="invite-email" className="sr-only">
                                 Undang dengan email
                             </Label>
-                            <div className="flex gap-2 justify-between">
+                            <div className="w-full flex gap-2">
                                 <Input
                                     id="invite-email"
                                     placeholder="Tambahkan anggota menurut nik atau email..."
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className={cn("w-[180px]")}
+                                    className={cn("w-full")}
                                 />
                                 <div className="flex gap-2">
-                                    <RoleSelect value={inviteRole} onChange={setInviteRole} className={cn("w-[130px]")} />
+                                    <RoleSelect value={inviteRole} onChange={setInviteRole} className={cn("w-[100px]")} />
                                     <Button onClick={handleInvite} disabled={!email.trim()}>
                                         Undang
                                     </Button>
@@ -180,55 +165,53 @@ export default function DialogInvitation(props: DialogInvitationProps) {
 
                 <Separator className="my-2" />
 
-                {/* Riwayat Undangan (collapsible punya state sendiri) */}
-                <Collapsible open={invitesOpen} onOpenChange={setInvitesOpen} className="px-6">
-                    <div className="flex items-center justify-between">
-                        <div className="text-sm">Riwayat Undangan</div>
-                        <Button variant="ghost" size="sm" className="gap-1" asChild>
-                            <CollapsibleTrigger className="flex items-center">
-                                <span className="text-xs text-muted-foreground mr-1">{invites.length}</span>
-                                <ChevronDown
-                                    className={`h-4 w-4 transition-transform ${invitesOpen ? "rotate-180" : ""}`}
-                                />
-                            </CollapsibleTrigger>
-                        </Button>
-                    </div>
+                {/*/!* Riwayat Undangan (collapsible punya state sendiri) *!/*/}
+                {/*<Collapsible open={invitesOpen} onOpenChange={setInvitesOpen} className="px-6">*/}
+                {/*    <div className="flex items-center justify-between">*/}
+                {/*        <div className="text-sm">Riwayat Undangan</div>*/}
+                {/*        <Button variant="ghost" size="sm" className="gap-1" asChild>*/}
+                {/*            <CollapsibleTrigger className="flex items-center">*/}
+                {/*                <span className="text-xs text-muted-foreground mr-1">{invites.length}</span>*/}
+                {/*                <ChevronDown*/}
+                {/*                    className={`h-4 w-4 transition-transform ${invitesOpen ? "rotate-180" : ""}`}*/}
+                {/*                />*/}
+                {/*            </CollapsibleTrigger>*/}
+                {/*        </Button>*/}
+                {/*    </div>*/}
 
-                    <CollapsibleContent className="mt-2 space-y-1">
-                        {invites.map((inv) => (
-                            <div
-                                key={inv.id}
-                                className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/40"
-                            >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <Avatar className="h-5 w-5">
-                                        <AvatarFallback>{inv.name?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="min-w-0">
-                                        <div className="text-sm leading-5 truncate">{inv.name}</div>
-                                        <div className="text-xs text-muted-foreground truncate">
-                                            {inv.code ? `${inv.code} | ` : null}
-                                            {inv.email}
-                                        </div>
-                                    </div>
-                                </div>
+                {/*    <CollapsibleContent className="mt-2 space-y-1">*/}
+                {/*        {invites.map((inv) => (*/}
+                {/*            <div*/}
+                {/*                key={inv.id}*/}
+                {/*                className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/40"*/}
+                {/*            >*/}
+                {/*                <div className="flex items-center gap-3 min-w-0">*/}
+                {/*                    <Avatar className="h-5 w-5">*/}
+                {/*                        <AvatarFallback>{inv.name?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>*/}
+                {/*                    </Avatar>*/}
+                {/*                    <div className="min-w-0">*/}
+                {/*                        <div className="text-sm leading-5 truncate">{inv.name}</div>*/}
+                {/*                        <div className="text-xs text-muted-foreground truncate">*/}
+                {/*                            {inv.code ? `${inv.code} | ` : null}*/}
+                {/*                            {inv.email}*/}
+                {/*                        </div>*/}
+                {/*                    </div>*/}
+                {/*                </div>*/}
 
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="outline">
-                                        {inv.status === "waiting" && "waiting.."}
-                                        {inv.status === "expired" && "expired"}
-                                        {inv.status === "accepted" && "accepted"}
-                                    </Badge>
-                                    <Button variant="ghost" size="sm" className="text-muted-foreground">
-                                        ⋯
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </CollapsibleContent>
-                </Collapsible>
-
-                <Separator className="my-1" />
+                {/*                <div className="flex items-center gap-2">*/}
+                {/*                    <Badge variant="outline">*/}
+                {/*                        {inv.status === "waiting" && "waiting.."}*/}
+                {/*                        {inv.status === "expired" && "expired"}*/}
+                {/*                        {inv.status === "accepted" && "accepted"}*/}
+                {/*                    </Badge>*/}
+                {/*                    <Button variant="ghost" size="sm" className="text-muted-foreground">*/}
+                {/*                        ⋯*/}
+                {/*                    </Button>*/}
+                {/*                </div>*/}
+                {/*            </div>*/}
+                {/*        ))}*/}
+                {/*    </CollapsibleContent>*/}
+                {/*</Collapsible>*/}
 
                 {/* Members ui */}
                 <div className="px-6 pb-2 flex items-center justify-between">

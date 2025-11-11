@@ -7,10 +7,10 @@ export function TaskTableHead() {
     return (
         <TableHeader className="sticky top-0 z-10 bg-muted/40 border-b">
             <TableRow className="divide-x divide-border">
-                <TableHead colSpan={2} className="py-2 px-3 text-center">Nama</TableHead>
-                <TableHead className="py-2 px-3 text-center">Assignee</TableHead>
-                <TableHead className="py-2 px-3 text-center">Tenggat</TableHead>
-                <TableHead className="py-2 px-3 text-center">Creator</TableHead>
+                <TableHead colSpan={2} className="py-2 px-3 text-center font-semibold">Nama</TableHead>
+                <TableHead className="py-2 px-3 text-center font-semibold">Assignee</TableHead>
+                <TableHead className="py-2 px-3 text-center font-semibold">Tenggat</TableHead>
+                <TableHead className="py-2 px-3 text-center font-semibold">Creator</TableHead>
             </TableRow>
         </TableHeader>
     );
