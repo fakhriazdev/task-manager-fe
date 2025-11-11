@@ -1,5 +1,5 @@
 //Payload
-import {ERoleProject, TProjectRole} from "@/app/dashboard/components/AddOrEditProjectDialog";
+import {TProjectRole} from "@/app/dashboard/components/AddOrEditProjectDialog";
 
 export type MoveSectionPayload = { beforeId?: string | null; afterId?: string | null }
 export type MoveTaskPayload = { targetSectionId?: string | null; beforeId?: string | null; afterId?: string | null; };
