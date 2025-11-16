@@ -5,22 +5,30 @@ import { useParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
 import { Info, TableOfContents, UserPlus } from 'lucide-react'
 
 import OverviewTab from '@/app/dashboard/projects/[id]/overview/components/OverviewTab'
 import ListTab from '@/app/dashboard/projects/[id]/list/component/ui/ListTab'
 
-import { useProjectDetailAction, useProjectTasksAction } from '@/lib/project/projectAction'
-import AvatarGroup, {AvatarGroupItem} from "@/components/shared/AvatarGroup";
-import InviteDialogDemo from "@/app/dashboard/projects/[id]/overview/components/DialogInvitation";
+import {
+    useProjectDetailAction,
+    useProjectTasksAction,
+} from '@/lib/project/projectAction'
+import AvatarGroup, { AvatarGroupItem } from '@/components/shared/AvatarGroup'
+import InviteDialogDemo from '@/app/dashboard/projects/[id]/overview/components/DialogInvitation'
+import {useProjectPermission} from "@/hooks/useProjectPermission";
 
 const TAB_KEYS = {
     OVERVIEW: 'overview',
     LIST: 'list',
 } as const
-type TabKey = typeof TAB_KEYS[keyof typeof TAB_KEYS]
+type TabKey = (typeof TAB_KEYS)[keyof typeof TAB_KEYS]
 
 export default function PageProjectDetail() {
     const { id } = useParams()
@@ -28,14 +36,30 @@ export default function PageProjectDetail() {
 
     const [activeTab, setActiveTab] = useState<TabKey>(TAB_KEYS.LIST)
 
-    const { data: project, isLoading: loadingProject, error: projectError } =
-        useProjectDetailAction(projectId)
+    const {
+        data: project,
+        isLoading: loadingProject,
+        error: projectError,
+    } = useProjectDetailAction(projectId)
 
-    const shouldPoll = activeTab === TAB_KEYS.LIST
+    // 🔐 hanya OWNER & EDITOR yang boleh akses Invitation modal
+    const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
 
-    const { data: taskList, isLoading: loadingTasks, error: tasksError } =
-        useProjectTasksAction(projectId, shouldPoll)
+    const isListTab = activeTab === TAB_KEYS.LIST
 
+    // ⬇️ hanya List tab yang boleh polling
+    const shouldPoll = isListTab
+    const shouldFetchTasks =
+        !!projectId && !loadingProject && !projectError && isListTab
+
+    const {
+        data: taskList,
+        isLoading: loadingTasks,
+        error: tasksError,
+    } = useProjectTasksAction(projectId, {
+        enablePolling: shouldPoll,
+        enabled: shouldFetchTasks,
+    })
     return (
         <div className="w-full px-4 lg:px-6 pt-4">
             {/* Header */}
@@ -43,10 +67,6 @@ export default function PageProjectDetail() {
                 <div>
                     {loadingProject ? (
                         <div className="h-6 w-40 bg-muted animate-pulse rounded-md" />
-                    ) : projectError ? (
-                        <h1 className="text-lg font-semibold text-red-500">
-                            Failed to load project
-                        </h1>
                     ) : (
                         <h1 className="text-lg font-semibold">{project?.name}</h1>
                     )}
@@ -54,7 +74,7 @@ export default function PageProjectDetail() {
 
                 <div className="flex gap-3 items-center text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
-                        <AvatarGroup max={7} size={"md"}>
+                        <AvatarGroup max={7} size="md">
                             {project?.members?.map((member, i) => (
                                 <AvatarGroupItem
                                     key={i}
@@ -64,17 +84,26 @@ export default function PageProjectDetail() {
                             ))}
                         </AvatarGroup>
                     </div>
-                    <div className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
-                        <InviteDialogDemo
-                            projectName={project?.name}
-                            trigger={
-                                <div className="flex items-center gap-1" role="button" tabIndex={0}>
-                                    <UserPlus className="size-4" />
-                                    <span>Add Assignee</span>
-                                </div>
-                            }
-                        />
-                    </div>
+
+                    {/* Invite dialog hanya kalau user punya akses (OWNER/EDITOR) */}
+                    {hasAccess && (
+                        <div className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
+                            <InviteDialogDemo
+                                projectName={project?.name}
+                                members={project?.members}
+                                trigger={
+                                    <div
+                                        className="flex items-center gap-1"
+                                        role="button"
+                                        tabIndex={0}
+                                    >
+                                        <UserPlus className="size-4" />
+                                        <span>Add Member</span>
+                                    </div>
+                                }
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -98,12 +127,17 @@ export default function PageProjectDetail() {
                         <SelectContent>
                             <SelectItem value={TAB_KEYS.OVERVIEW}>
                                 <div className="flex items-center gap-2">
-                                    <Info strokeWidth={2} className="size-4" /> <span>Overview</span>
+                                    <Info strokeWidth={2} className="size-4" />{' '}
+                                    <span>Overview</span>
                                 </div>
                             </SelectItem>
                             <SelectItem value={TAB_KEYS.LIST}>
                                 <div className="flex items-center gap-2">
-                                    <TableOfContents strokeWidth={2} className="size-4" /> <span>List</span>
+                                    <TableOfContents
+                                        strokeWidth={2}
+                                        className="size-4"
+                                    />{' '}
+                                    <span>List</span>
                                 </div>
                             </SelectItem>
                         </SelectContent>
@@ -112,10 +146,14 @@ export default function PageProjectDetail() {
                     {/* Desktop */}
                     <TabsList className="hidden gap-2 md:flex">
                         <TabsTrigger value={TAB_KEYS.OVERVIEW}>
-                            <Info strokeWidth={2} className="size-4 mr-1" /> Overview
+                            <Info strokeWidth={2} className="size-4" /> Overview
                         </TabsTrigger>
                         <TabsTrigger value={TAB_KEYS.LIST}>
-                            <TableOfContents strokeWidth={2} className="size-4 mr-1" /> List
+                            <TableOfContents
+                                strokeWidth={2}
+                                className="size-4"
+                            />{' '}
+                            List
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -135,12 +173,14 @@ export default function PageProjectDetail() {
 
                 <TabsContent value={TAB_KEYS.LIST}>
                     {tasksError ? (
-                        <p className="text-sm text-red-500">Failed to load tasks</p>
-                    ) : loadingTasks ? (
+                        <></>
+                    ) : !shouldFetchTasks ? null : loadingTasks ? (
                         <div className="h-24 bg-muted animate-pulse rounded-md" />
                     ) : taskList ? (
                         <ListTab />
-                    ) : null}
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No tasks yet.</p>
+                    )}
                 </TabsContent>
             </Tabs>
         </div>

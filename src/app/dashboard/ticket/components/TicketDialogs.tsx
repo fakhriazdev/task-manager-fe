@@ -11,8 +11,7 @@ export default function TicketDialogs() {
     const completeMutation = useCompleteTicket()
 
     // 👉 anggap ini overlay states
-    const isOverlay =
-        open === "confirm" || open === "complete" || open === "pending"
+    const isOverlay = open === "confirm" || open === "complete" || open === "pending"
 
     return (
         <>

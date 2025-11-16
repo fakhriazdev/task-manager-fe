@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import { Section } from "@/app/dashboard/projects/[id]/list/types/task"
 
-export type ProjectDialogType = "createSection" |"deleteSection" | "createTask" | "detail"
+export type ProjectDialogType = "createSection" |"deleteSection" | "createTask" |"deleteTask"| "detail" | "deleteProject"
 
 interface ProjectState {
     open: ProjectDialogType | null

@@ -1,0 +1,507 @@
+'use client';
+
+import React from 'react';
+import {
+    Formik,
+    Form,
+    Field,
+    ErrorMessage,
+    type FieldProps,
+    type FieldMetaProps,
+} from 'formik';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FileImage, Upload, X } from 'lucide-react';
+import Image from 'next/image';
+
+import { useAddTicket } from '@/lib/ticket/useTicketAction';
+import {
+    CATEGORY_OPTIONS,
+    PAYMENT_OPTIONS,
+    type CategoryCode,
+    type PaymentCode,
+    type TicketForm,
+} from '@/lib/ticket/TicketTypes';
+import { validationSchema, FILE_RULES } from '@/app/shared/ticket/schemas/form';
+import { useImageUpload } from '@/hooks/useImageUpload';
+
+export default function TicketForm() {
+    const addTicket = useAddTicket();
+    const isLoading = addTicket.isPending;
+
+    const {
+        selectedImages,
+        previews,
+        uploadError,
+        setUploadError,
+        handleUpload,
+        handleRemove,
+        fileInputRef,
+        handleReset
+    } = useImageUpload();
+
+    const initialValues: TicketForm = {
+        idStore: '',
+        noTelp:'',
+        idtv:'',
+        category: 'Transaksi',
+        description: '',
+        fromPayment: '',
+        toPayment: '',
+        isDirectSelling: false,
+        billCode: '',
+        grandTotal: '',
+        images: new DataTransfer().files,
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <Card className="w-full max-w-2xl shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-2xl">
+                        <FileImage className="w-6 h-6 text-primary" /> Create New Report
+                    </CardTitle>
+                    <CardDescription>
+                        Fill in the details below to create a new report
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Formik<TicketForm>
+                        initialValues={initialValues}
+                        validationSchema={validationSchema}
+                        onSubmit={async (values:TicketForm) => {
+                            if (selectedImages.length === 0) {
+                                setUploadError('Please upload at least one image.');
+                                return;
+                            }
+                            const dt = new DataTransfer();
+                            selectedImages.forEach((f) => dt.items.add(f));
+
+                            const payload: TicketForm = {
+                                ...values,
+                                images: dt.files,
+
+                            };
+
+                            await addTicket.mutateAsync({payload, callbackUrl: "https://web.amscorp.id:3060/"});
+                            setUploadError('');
+                        }}
+                    >
+                        {(formik) => {
+                            const { values, setFieldValue, isValid, dirty } = formik;
+                            const isTransaksi = values.category === 'Transaksi';
+                            return (
+                                <Form className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label>Store ID *</Label>
+                                            <Field name="idStore">
+                                                {({ field, meta }: FieldProps<string, TicketForm>) => (
+                                                    <>
+                                                        <Input
+                                                            {...field}
+                                                            value={field.value.toUpperCase() ?? ''}
+                                                            placeholder="Enter store ID"
+                                                            maxLength={6}
+                                                        />
+                                                        {meta.touched && meta.error && (
+                                                            <p className="text-sm text-destructive">
+                                                                {meta.error}
+                                                            </p>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </Field>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>No. Telephone *</Label>
+                                            <Field name="noTelp">
+                                                {({ field, meta }: FieldProps<string, TicketForm>) => (
+                                                    <>
+                                                        <Input
+                                                            {...field}
+                                                            value={field.value ?? ''}
+                                                            placeholder="Enter your No Telephone"
+                                                            maxLength={13}
+                                                        />
+                                                        {meta.touched && meta.error && (
+                                                            <p className="text-sm text-destructive">
+                                                                {meta.error}
+                                                            </p>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </Field>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Category *</Label>
+                                        <Field name="category">
+                                            {({ meta }: { meta: FieldMetaProps<TicketForm['category']> }) => (
+                                                <>
+                                                    <select
+                                                        value={values.category}
+                                                        onChange={(e) => {
+                                                            const next = e.target.value as CategoryCode;
+                                                            setFieldValue('category', next, true);
+
+                                                            // setiap ganti kategori, reset semua field + images
+                                                            formik.setValues(
+                                                                {
+                                                                    idStore: '',
+                                                                    idtv:'',
+                                                                    noTelp: '',
+                                                                    category: next,
+                                                                    description: '',
+                                                                    fromPayment: '',
+                                                                    toPayment: '',
+                                                                    isDirectSelling: false,
+                                                                    billCode: '',
+                                                                    grandTotal: '',
+                                                                    images: new DataTransfer().files,
+                                                                }, false
+                                                            );
+                                                            handleReset(setFieldValue);
+                                                        }}
+
+                                                        className={cn(
+                                                            'w-full border rounded px-2 py-2',
+                                                            meta.touched &&
+                                                            meta.error &&
+                                                            'border-destructive'
+                                                        )}
+                                                    >
+                                                        <option value="" disabled>
+                                                            Select category
+                                                        </option>
+                                                        {CATEGORY_OPTIONS.map((opt) => (
+                                                            <option key={opt.value} value={opt.value}>
+                                                                {opt.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {meta.touched && meta.error && (
+                                                        <p className="text-sm text-destructive">
+                                                            {meta.error}
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </Field>
+                                    </div>
+
+                                    {/* Description */}
+                                    <div className="space-y-2">
+                                        <Label>Description *</Label>
+                                        <Field name="description">
+                                            {({ field, meta }: FieldProps<string, TicketForm>) => (
+                                                <>
+                                                    <Textarea
+                                                        {...field}
+                                                        value={field.value ?? ''}
+                                                        placeholder="Please describe the issue..."
+                                                    />
+                                                    {meta.touched && meta.error && (
+                                                        <p className="text-sm text-destructive">
+                                                            {meta.error}
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </Field>
+                                    </div>
+
+                                    {/* Transaction fields grid 2 kolom */}
+                                    {isTransaksi && (
+                                        <div className="space-y-4 p-4 border rounded bg-muted/30">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {/* From Payment */}
+                                                <div className="space-y-2">
+                                                    <Label>From Payment *</Label>
+                                                    <Field name="fromPayment">
+                                                        {({
+                                                              meta,
+                                                          }: {
+                                                            meta: FieldMetaProps<TicketForm['fromPayment']>;
+                                                        }) => (
+                                                            <>
+                                                                <select
+                                                                    value={values.fromPayment ?? ''}
+                                                                    onChange={(e) =>
+                                                                        setFieldValue(
+                                                                            'fromPayment',
+                                                                            e.target.value as PaymentCode,
+                                                                            true
+                                                                        )
+                                                                    }
+                                                                    className={cn(
+                                                                        'w-full border rounded px-2 py-2',
+                                                                        meta.touched &&
+                                                                        meta.error &&
+                                                                        'border-destructive'
+                                                                    )}
+                                                                >
+                                                                    <option value="" disabled>
+                                                                        Select from payment
+                                                                    </option>
+                                                                    {PAYMENT_OPTIONS.map((opt) => (
+                                                                        <option key={opt.value} value={opt.value}>
+                                                                            {opt.label}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                {meta.touched && meta.error && (
+                                                                    <p className="text-sm text-destructive">
+                                                                        {meta.error}
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Field>
+                                                </div>
+
+                                                {/* To Payment */}
+                                                <div className="space-y-2">
+                                                    <Label>To Payment *</Label>
+                                                    <Field name="toPayment">
+                                                        {({
+                                                              meta,
+                                                          }: {
+                                                            meta: FieldMetaProps<TicketForm['toPayment']>;
+                                                        }) => (
+                                                            <>
+                                                                <select
+                                                                    value={values.toPayment ?? ''}
+                                                                    onChange={(e) =>
+                                                                        setFieldValue(
+                                                                            'toPayment',
+                                                                            e.target.value as PaymentCode,
+                                                                            true
+                                                                        )
+                                                                    }
+                                                                    className={cn(
+                                                                        'w-full border rounded px-2 py-2',
+                                                                        meta.touched &&
+                                                                        meta.error &&
+                                                                        'border-destructive'
+                                                                    )}
+                                                                >
+                                                                    <option value="" disabled>
+                                                                        Select to payment
+                                                                    </option>
+                                                                    {PAYMENT_OPTIONS.map((opt) => (
+                                                                        <option key={opt.value} value={opt.value}>
+                                                                            {opt.label}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                {meta.touched && meta.error && (
+                                                                    <p className="text-sm text-destructive">
+                                                                        {meta.error}
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Field>
+                                                </div>
+
+                                                {/* Billcode */}
+                                                <div className="space-y-2">
+                                                    <Label>Bill Code *</Label>
+                                                    <Field name="billCode">
+                                                        {({
+                                                              field,
+                                                              meta,
+                                                          }: FieldProps<string | null, TicketForm>) => (
+                                                            <>
+                                                                <Input
+                                                                    {...field}
+                                                                    value={field.value?.toUpperCase() ?? ''}
+                                                                    placeholder="Enter bill code"
+                                                                    maxLength={12}
+                                                                />
+                                                                {meta.touched && meta.error && (
+                                                                    <p className="text-sm text-destructive">
+                                                                        {meta.error}
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Field>
+                                                </div>
+
+                                                {/* Grand Total */}
+                                                <div className="space-y-2">
+                                                    <Label>Grand Total *</Label>
+                                                    <Field name="grandTotal">
+                                                        {({ field, meta, form }: FieldProps<string | null, TicketForm>) => {
+                                                            const rawValue = field.value ?? '';
+
+                                                            // format angka -> Rp + comma
+                                                            const formatCurrency = (val: string) => {
+                                                                if (!val) return 'Rp ';
+                                                                const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
+                                                                if (isNaN(num)) return 'Rp ';
+                                                                return `Rp ${num.toLocaleString('id-ID')}`;
+                                                            };
+
+                                                            // unformat -> hanya angka string
+                                                            const unformatCurrency = (val: string) => {
+                                                                return val.replace(/[^0-9]/g, '');
+                                                            };
+
+                                                            const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                                                                const onlyDigits = unformatCurrency(e.target.value);
+                                                                form.setFieldValue('grandTotal', onlyDigits, true);
+                                                            };
+
+                                                            return (
+                                                                <>
+                                                                    <Input
+                                                                        {...field}
+                                                                        value={formatCurrency(rawValue)}
+                                                                        placeholder="Enter grand total"
+                                                                        onChange={handleChange}
+                                                                    />
+                                                                    {meta.touched && meta.error && (
+                                                                        <p className="text-sm text-destructive">{meta.error}</p>
+                                                                    )}
+                                                                </>
+                                                            );
+                                                        }}
+                                                    </Field>
+                                                </div>
+                                                {/* Direct Selling */}
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <Field name="isDirectSelling">
+                                                        {({ field, meta, form }: FieldProps<boolean | null, TicketForm>) => (
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <input
+                                                                        id="isDirectSelling"
+                                                                        type="checkbox"
+                                                                        checked={field.value ?? false}
+                                                                        onChange={(e) =>
+                                                                            form.setFieldValue("isDirectSelling", e.target.checked, true)
+                                                                        }
+                                                                        className="h-4 w-4 rounded border-gray-300"
+                                                                    />
+                                                                    <Label htmlFor="isDirectSelling">Direct Selling</Label>
+                                                                </div>
+
+                                                                {/* helper text */}
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    *Apakah transaksi ini termasuk Direct Selling? Jika ya, silakan centang kotak di atas.
+                                                                </p>
+
+                                                                {meta.touched && meta.error && (
+                                                                    <p className="text-sm text-destructive">{meta.error}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </Field>
+                                                </div>
+
+
+
+                                            </div>
+                                        </div>
+                                    )}
+
+
+
+                                    {/* Image Upload */}
+                                    <div className="space-y-4">
+                                        <Label>Attachments *</Label>
+                                        {uploadError && (
+                                            <Alert variant="destructive">
+                                                <AlertDescription>{uploadError}</AlertDescription>
+                                            </Alert>
+                                        )}
+                                        <label className="block w-full h-40 border-2 border-dashed rounded flex flex-col items-center justify-center cursor-pointer">
+                                            <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                                            <span className="text-sm">
+                        Click to upload or drag and drop
+                      </span>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                multiple
+                                                accept={FILE_RULES.accept.join(',')}
+                                                className="hidden"
+                                                onChange={(e) =>
+                                                    handleUpload(e.currentTarget.files, setFieldValue)
+                                                }
+                                                disabled={selectedImages.length >= FILE_RULES.maxFiles}
+                                            />
+                                        </label>
+
+                                        {selectedImages.length > 0 && (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                                {selectedImages.map((f, i) => {
+                                                    const src = previews[i] ?? null;
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="relative border rounded overflow-hidden aspect-[4/3]"
+                                                        >
+                                                            {src ? (
+                                                                <Image
+                                                                    src={src}
+                                                                    alt={f.name}
+                                                                    fill
+                                                                    unoptimized
+                                                                    className="object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                                                    <FileImage className="w-8 h-8 text-muted-foreground" />
+                                                                </div>
+                                                            )}
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    handleRemove(i, setFieldValue)
+                                                                }
+                                                                className="absolute top-1 right-1 h-6 w-6 rounded-full p-0"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </Button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        <ErrorMessage
+                                            name="images"
+                                            component="p"
+                                            className="text-sm text-destructive"
+                                        />
+                                    </div>
+
+                                    {/* Submit */}
+                                    <Button
+                                        type="submit"
+                                        disabled={isLoading || !isValid || !dirty}
+                                        className="w-full"
+                                    >
+                                        {isLoading ? 'Creating Ticket...' : 'Create Ticket'}
+                                    </Button>
+                                </Form>
+                            );
+                        }}
+                    </Formik>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

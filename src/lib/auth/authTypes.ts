@@ -3,7 +3,13 @@ export interface UserInfo {
     nik: string ;
     nama: string;
     roleId: string;
+    memberProjects:MemberProjects[]
 }
+export interface MemberProjects {
+    projectId: string;
+    roleProject: string;
+}
+
 
 
 //payload

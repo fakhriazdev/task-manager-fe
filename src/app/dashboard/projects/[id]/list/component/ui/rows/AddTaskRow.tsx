@@ -20,11 +20,11 @@ export default function AddTaskRow({ colSpan = 5, sectionId, disabled }: Props) 
             <TableCell colSpan={colSpan} className="p-0">
                 <button
                     type="button"
-                    className="w-full h-11 text-sm text-muted-foreground hover:text-bg-muted/40 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full h-11 text-sm text-primary hover:text-bg-muted/40 transition flex items-center justify-center gap-2 disabled:opacity-50"
                     disabled={!!disabled}
                     onClick={() => {
-                        setCurrentRow(sectionId);   // section target untuk createTask
-                        setOpen('createTask');      // buka dialog global
+                        setCurrentRow(sectionId);
+                        setOpen('createTask');
                     }}
                 >
                     <Plus className="h-4 w-4" />

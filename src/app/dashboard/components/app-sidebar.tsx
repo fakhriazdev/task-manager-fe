@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Plus } from 'lucide-react'
+import { Blocks, FolderArchive, Plus} from 'lucide-react'
 import { IconDashboard, IconTicket, IconUsers } from '@tabler/icons-react'
 import {
     Sidebar,
@@ -18,19 +18,36 @@ import { NavGroup } from './nav-group'
 import { useNavStore } from '@/lib/stores/useNavStore'
 import { NavDialog } from './nav-dialog'
 import {useProjectAction} from "@/lib/project/projectAction";
+import {Project} from "@/lib/project/projectTypes";
 
 const NavUser = React.lazy(() => import('./nav-user'))
 
 type RoleId = 'SUPER' | 'ADMIN' | string
+type NavSection = {
+    title: string;
+    items: NavItem[];
+};
+type NavItem = {
+    id: string
+    title: string
+    url?: string
+    isArchive:boolean
+    icon?: React.ComponentType<{ className?: string }>
+    color?: string
+    badge?: string | number
+    items?: NavItem[]
+    canManageArchive?: boolean
+}
+
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const queryClient = useQueryClient()
     const { user, isAuthenticated } = useAuthStore()
+    console.log(user?.memberProjects)
     const setUser = useAuthStore((state) => state.setUser)
     const { state } = useSidebar()
     const isCollapsed = state === 'collapsed'
     const { setOpen } = useNavStore()
-
     // 🔹 Fetch user info (once)
     React.useEffect(() => {
         if (user && isAuthenticated) return
@@ -53,37 +70,87 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { data: projects = [], isLoading, refetch } = useProjectAction()
 
     // 🔹 Role-based filter
+// 🔹 Role-based filter
     const filteredSidebarData = React.useMemo(() => {
         const roleId = (user?.roleId as RoleId) || ''
+        const isSuper = roleId === 'SUPER'
+
+        // ambil daftar project yang user punya role di dalamnya
+        type MemberProject = { projectId: string; roleProject: string }
+        const memberProjects: MemberProject[] = (user?.memberProjects as MemberProject[]) ?? []
+
+        const isArchivedFlag = (p: Project) => p.isArchive
+        const activeProjects   = isLoading ? [] : projects.filter((p) => !isArchivedFlag(p))
+        const archivedProjects = isLoading ? [] : projects.filter((p) =>  isArchivedFlag(p))
+
+        // 🔹 apakah user boleh manage (archive/restore) project ini?
+        const canManageProject = (p: Project): boolean => {
+            if (isSuper) return true
+
+            const projectIdStr = String(p.id)
+
+            return memberProjects.some(
+                (mp) =>
+                    mp.projectId === projectIdStr &&
+                    mp.roleProject === 'OWNER' || mp.roleProject === 'EDITOR'
+            )
+        }
 
         const navGroups = [
             {
-                title: 'Main',
+                title: "Main",
                 items: [
-                    { title: 'Dashboard', url: '/dashboard', icon: IconDashboard },
-                    { title: 'Ticket', url: '/dashboard/ticket', icon: IconTicket },
-                    { title: 'Members', url: '/dashboard/members', icon: IconUsers },
-                ].filter((i) => !(roleId === 'ADMIN' && i.title === 'Members')),
+                    { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: IconDashboard, isArchive:false },
+                    { id: "ticket",    title: "Ticket",    url: "/dashboard/ticket",   icon: IconTicket, isArchive:false },
+                    { id: "members",   title: "Members",   url: "/dashboard/members",  icon: IconUsers,  isArchive:false },
+                ].filter(i => !(roleId === "ADMIN" && i.title === "Members")),
             },
             {
-                title: 'Projects',
+                title: "Projects",
                 items: [
                     {
-                        title: 'Projects',
+                        id: "projects-group",
+                        title: "Projects",
+                        isArchive:false,
+                        icon: Blocks,
                         items: isLoading
-                            ? [] // sementara kosong
-                            : projects.map((p) => ({
+                            ? []
+                            : activeProjects.map((p) => ({
+                                id: String(p.id),
                                 title: p.name,
                                 color: p.color,
                                 url: `/dashboard/projects/${p.id}`,
+                                isArchive: p.isArchive,
+                                canManageArchive: canManageProject(p),   // ⬅️ di sini
                             })),
                     },
                 ],
             },
-        ]
+            {
+                title: "Archives",
+                items: [
+                    {
+                        id: "archives-group",
+                        title: "Archives",
+                        isArchive:false,
+                        icon: FolderArchive,
+                        items: isLoading
+                            ? []
+                            : archivedProjects.map((p) => ({
+                                id: String(p.id),
+                                title: p.name,
+                                color: p.color,
+                                isArchive: p.isArchive,
+                                canManageArchive: canManageProject(p),   // ⬅️ dan di sini
+                            })),
+                    },
+                ],
+            },
+        ] satisfies NavSection[];
 
         return { navGroups }
-    }, [user?.roleId, projects, isLoading])
+    }, [user?.roleId, user?.memberProjects, projects, isLoading])
+
 
     return (
         <>

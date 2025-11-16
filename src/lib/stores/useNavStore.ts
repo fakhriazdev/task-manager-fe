@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import {Project} from "@/lib/project/projectTypes";
 
-export type NavDialogType = "project" | "editProject";
+export type NavDialogType = "project" | "editProject" | "archive" | "deleteProject" | "restore";
 
 interface NavState {
     open: NavDialogType | null

@@ -7,6 +7,8 @@ import { useProjectStore } from '@/lib/stores/useProjectStore';
 import DeleteSectionConfirm from './DeleteSectionConfirm';
 import CreateTaskDialog from "@/app/dashboard/projects/[id]/list/component/dialogs/creatTaskDialog";
 import CreateSectionDialog from "@/app/dashboard/projects/[id]/list/component/dialogs/createSectionDialog";
+import {ConfirmDialog} from "@/components/shared/confirmDialog";
+import {useDeleteTaskAction} from "@/lib/project/projectAction";
 
 export default function ProjectDialogs({ projectId }: { projectId?: string }) {
     const params = useParams<{ id?: string }>();
@@ -14,6 +16,7 @@ export default function ProjectDialogs({ projectId }: { projectId?: string }) {
         () => (projectId ?? (params?.id as string)) || '',
         [projectId, params?.id]
     );
+    const deleteTaskMutation = useDeleteTaskAction();
 
     const open = useProjectStore(s => s.open);
     const setOpen = useProjectStore(s => s.setOpen);
@@ -24,6 +27,36 @@ export default function ProjectDialogs({ projectId }: { projectId?: string }) {
         setOpen(null);
         setCurrentRow(null);
     }, [setOpen, setCurrentRow]);
+
+    const handleDeleteTaskConfirm = React.useCallback(() => {
+        if (!currentRowId) return;
+
+        deleteTaskMutation.mutate(
+            {
+                taskId: currentRowId,
+                projectId: effectiveProjectId,
+            },
+            {
+                onSuccess: () => {
+                    // tutup dialog + bersihin selection
+                    setOpen(null);
+                    setCurrentRow(null);
+                },
+            }
+        );
+    }, [currentRowId, effectiveProjectId, deleteTaskMutation, setOpen, setCurrentRow]);
+
+    const handleDeleteTaskOpenChange = React.useCallback(
+        (isOpen: boolean) => {
+            if (!isOpen) {
+                // kalau user cancel / dialog ditutup
+                setOpen(null);
+            } else {
+                setOpen('deleteTask');
+            }
+        },
+        [setOpen]
+    );
 
     return (
         <>
@@ -43,6 +76,16 @@ export default function ProjectDialogs({ projectId }: { projectId?: string }) {
                     <DeleteSectionConfirm projectId={effectiveProjectId} />
                 </>
             )}
+            <ConfirmDialog
+                open={open === 'deleteTask'}
+                onOpenChange={handleDeleteTaskOpenChange}
+                title="Hapus tugas?"
+                desc="Tindakan ini tidak bisa dibatalkan. Semua subtasks dan lampiran yang terkait dengan tugas ini juga akan dihapus."
+                handleConfirm={handleDeleteTaskConfirm}
+                confirmText="Hapus"
+                destructive
+            />
+
         </>
     );
 }

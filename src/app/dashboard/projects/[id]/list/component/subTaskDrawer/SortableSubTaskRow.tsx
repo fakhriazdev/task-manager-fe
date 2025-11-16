@@ -1,7 +1,7 @@
 "use client";
 
 import { cn, formatDateTime2, isOverdue } from "@/lib/utils";
-import { Calendar as CalendarIcon, GripVertical, Trash2, User as UserIcon, X } from "lucide-react";
+import { Calendar as CalendarIcon, GripVertical, Trash2, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -17,8 +17,14 @@ import React, {
 } from "react";
 import type { SubTask } from "@/lib/project/projectTypes";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
+import AssigneePicker from "@/app/dashboard/projects/[id]/list/component/AssigneePicker";
+import { useSyncSubTaskAssigneesAction} from "@/lib/project/projectAction";
+import {Assignees} from "@/app/dashboard/projects/[id]/list/types/task";
 
 type Props = {
+    memberTask: Assignees[];
+    projectId: string;
+    hasAccess: boolean;
     item: SubTask;
     taskId: string;
     handlers: {
@@ -32,7 +38,7 @@ type Props = {
 const dashedBtn =
     "size-8 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center hover:border-muted-foreground transition";
 
-export default function SortableSubtaskRow({ item, handlers, taskId }: Props) {
+export default function SortableSubtaskRow({memberTask,projectId, item, handlers, taskId,hasAccess }: Props) {
     const { setNodeRef, attributes, listeners, transform, transition, isDragging, isSorting } =
         useSortable({ id: item.id });
 
@@ -43,6 +49,12 @@ export default function SortableSubtaskRow({ item, handlers, taskId }: Props) {
     const [dueDate, setDueDate] = useState<Date | undefined>(item.dueDate ? new Date(item.dueDate) : undefined);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const syncAssigneeMut = useSyncSubTaskAssigneesAction(projectId);
+
+    // 🔹 local assignees state (optimistic UI)
+    const [localAssignees, setLocalAssignees] = useState<Assignees[]>(
+        (item.assignees ?? []) as Assignees[],);
+
 
     // ====== Refs untuk field item agar deps callback stabil ======
     const itemIdRef = useRef(item.id);
@@ -50,6 +62,10 @@ export default function SortableSubtaskRow({ item, handlers, taskId }: Props) {
     const itemNameRef = useRef(item.name ?? "");
     const itemStatusRef = useRef(!!item.status);
     const itemSnapshotRef = useRef(item); // untuk rollback delete
+
+    useEffect(() => {
+        setLocalAssignees((item.assignees ?? []) as Assignees[]);
+    }, [item.assignees]);
 
     useEffect(() => {
         itemIdRef.current = item.id;
@@ -229,6 +245,36 @@ export default function SortableSubtaskRow({ item, handlers, taskId }: Props) {
         }),
         [transform, transition, isDragging, isSorting]
     );
+    const handleAssigneesChange = useCallback(
+        (next: Assignees[]) => {
+            if (!hasAccess) return;
+
+            // update UI lokal
+            setLocalAssignees(next);
+
+            // optional: update juga ke state parent biar konsisten
+            setItems((prev) =>
+                prev.map((it) =>
+                    it.id === itemIdRef.current
+                        ? ({
+                            ...it,
+                            assignees: next,
+                        } as SubTask)
+                        : it,
+                ),
+            );
+
+            // kirim ke backend: cuma butuh nik
+            const payload = next.map((a) => ({ nik: a.nik.trim() }));
+
+            syncAssigneeMut.mutate({
+                taskId,
+                subtaskId: item.id,
+                assignees: payload,
+            });
+        },
+        [hasAccess, setItems, syncAssigneeMut, taskId, item.id],
+    );
 
     return (
         <div
@@ -277,174 +323,209 @@ export default function SortableSubtaskRow({ item, handlers, taskId }: Props) {
 
             {/* Nama */}
             <div className="flex-1">
-                {editing ? (
+                {editing && hasAccess ? (
                     <input
                         ref={inputRef}
                         value={value}
                         onChange={(e) => {
-                            const v = e.target.value;
-                            setValue(v);
-                            if (!itemIsNewRef.current) debouncedRename(itemIdRef.current, v);
+                            const v = e.target.value
+                            setValue(v)
+                            if (!itemIsNewRef.current) debouncedRename(itemIdRef.current, v)
                         }}
                         onBlur={() => {
-                            void commitNameAsync();
+                            void commitNameAsync()
                         }}
                         onKeyDown={onKeyDown}
                         placeholder="Nama subtugas..."
                         className="w-60 ml-1 p-0 text-sm bg-transparent border-b outline-none border-transparent focus:border-primary/40 transition-all"
                         aria-label="Ubah nama subtugas"
                     />
-                ) : (
+                ) : hasAccess ? (
                     <div
                         role="button"
                         tabIndex={0}
                         onClick={() => setEditing(true)}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                setEditing(true);
+                                e.preventDefault()
+                                setEditing(true)
                             }
                         }}
                         className={cn(
                             "w-60 font-semibold text-primary flex-1 text-left text-sm truncate px-1 cursor-text rounded-sm transition-all hover:bg-accent/30",
-                            item.status && "text-muted-foreground"
+                            item.status && "text-muted-foreground",
                         )}
                         title={item.name}
                         aria-label="Edit nama subtugas"
                     >
-                        {item.name || <span className="text-muted-foreground/50">Nama subtugas...</span>}
+                        {item.name || (
+                            <span className="text-muted-foreground/50">Nama subtugas...</span>
+                        )}
+                    </div>
+                ) : (
+                    // 🔒 no access → read-only text
+                    <div
+                        className={cn(
+                            "w-60 flex-1 text-left text-sm truncate px-1 rounded-sm",
+                            item.status ? "text-muted-foreground" : "text-foreground",
+                        )}
+                        title={item.name}
+                        aria-label="Nama subtugas"
+                    >
+                        {item.name || (
+                            <span className="text-muted-foreground/50">Nama subtugas...</span>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* Assignee placeholder */}
-            <div
-                role="button"
-                tabIndex={0}
-                className={cn(
-                    dashedBtn,
-                    "size-7 text-muted-foreground/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-                )}
-                onClick={() => {
-                    /* open assignee modal */
-                }}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        /* open assignee modal */
-                    }
-                }}
-                aria-label="Pilih penerima subtugas"
-                title="Pilih penerima subtugas"
-            >
-                <UserIcon className="size-4" />
-            </div>
+            {hasAccess && (
+                <AssigneePicker
+                    hasAccess={hasAccess}
+                    currentMembers={localAssignees}
+                    members={memberTask ?? []}
+                    onChange={handleAssigneesChange}
+                    disabled={syncAssigneeMut.isPending}
+                />
+            )}
 
             {/* Delete */}
-            <button
-                type="button"
-                className={cn(
-                    "size-7 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-200",
-                    "text-red-500 border-red-500/60 hover:text-red-600 hover:border-red-600 hover:bg-red-600/10",
-                    "opacity-0 group-hover:opacity-100 cursor-pointer"
-                )}
-                onClick={() => {
-                    void removeAsync();
-                }}
-                aria-label="Hapus subtugas"
-                title="Hapus subtugas"
-            >
-                <Trash2 className="size-3.5 pointer-events-none" />
-            </button>
+            {hasAccess && (
+                <button
+                    type="button"
+                    className={cn(
+                        "size-7 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-200",
+                        "text-red-500 border-red-500/60 hover:text-red-600 hover:border-red-600 hover:bg-red-600/10",
+                        "opacity-0 group-hover:opacity-100 cursor-pointer",
+                    )}
+                    onClick={() => {
+                        void removeAsync()
+                    }}
+                    aria-label="Hapus subtugas"
+                    title="Hapus subtugas"
+                >
+                    <Trash2 className="size-3.5 pointer-events-none" />
+                </button>
+            )}
 
             {/* Date picker */}
             <div className="flex items-center gap-2 relative">
-                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                    <PopoverTrigger asChild>
-                        {dueDate ? (
-                            <div className="flex items-center gap-1">
-                <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setIsCalendarOpen(true)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setIsCalendarOpen(true);
-                        }
-                    }}
-                    className="font-semibold text-foreground text-sm cursor-pointer hover:text-primary transition-colors"
-                    title="Ubah tenggat subtugas"
-                >
-                  <p className={cn("text-xs", isOverdue(dueDate) && "text-red-500")}>
-                    {formatDateTime2(dueDate)}
-                  </p>
-                </span>
+                {hasAccess ? (
+                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                        <PopoverTrigger asChild>
+                            {dueDate ? (
+                                <div className="flex items-center gap-1">
+            <span
+                role="button"
+                tabIndex={0}
+                onClick={() => setIsCalendarOpen(true)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        setIsCalendarOpen(true)
+                    }
+                }}
+                className="font-semibold text-foreground text-sm cursor-pointer hover:text-primary transition-colors"
+                title="Ubah tenggat subtugas"
+            >
+              <p
+                  className={cn(
+                      "text-xs",
+                      isOverdue(dueDate) && "text-red-500",
+                  )}
+              >
+                {formatDateTime2(dueDate)}
+              </p>
+            </span>
 
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        void clearDateAsync(e);
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            void clearDateAsync(e)
+                                        }}
+                                        className="text-muted-foreground/60 hover:text-destructive transition-colors p-0.5 rounded-md"
+                                        aria-label="Hapus tanggal"
+                                        title="Hapus tanggal"
+                                    >
+                                        <X className="size-3.5" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div
+                                    role="button"
+                                    tabIndex={0}
+                                    className={cn(
+                                        dashedBtn,
+                                        "px-2 rounded-full justify-center text-xs text-muted-foreground/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer size-7 flex items-center",
+                                    )}
+                                    onClick={() => setIsCalendarOpen(true)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            e.preventDefault()
+                                            setIsCalendarOpen(true)
+                                        }
                                     }}
-                                    className="text-muted-foreground/60 hover:text-destructive transition-colors p-0.5 rounded-md"
-                                    aria-label="Hapus tanggal"
-                                    title="Hapus tanggal"
+                                    aria-label="Set tanggal subtugas"
+                                    title="Set tanggal subtugas"
                                 >
-                                    <X className="size-3.5" />
-                                </button>
-                            </div>
-                        ) : (
-                            <div
-                                role="button"
-                                tabIndex={0}
-                                className={cn(
-                                    dashedBtn,
-                                    "px-2 rounded-full justify-center text-xs text-muted-foreground/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer size-7 flex items-center"
-                                )}
-                                onClick={() => setIsCalendarOpen(true)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                        e.preventDefault();
-                                        setIsCalendarOpen(true);
-                                    }
-                                }}
-                                aria-label="Set tanggal subtugas"
-                                title="Set tanggal subtugas"
-                            >
-                                <CalendarIcon className="size-4" />
-                            </div>
-                        )}
-                    </PopoverTrigger>
+                                    <CalendarIcon className="size-4" />
+                                </div>
+                            )}
+                        </PopoverTrigger>
 
-                    <PopoverContent className="p-2 w-auto" align="end" side="top" sideOffset={8} avoidCollisions={false}>
-                        <Calendar
-                            mode="single"
-                            selected={dueDate}
-                            onSelect={(date: Date | undefined) => {
-                                setDueDate(date);
-                                // simpan ke items sebagai string ISO (bukan Date)
-                                setItems((prev) =>
-                                    prev.map((it) =>
-                                        it.id === itemIdRef.current ? { ...it, dueDate: date ? date.toISOString() : null } : it
+                        <PopoverContent
+                            className="p-2 w-auto"
+                            align="end"
+                            side="top"
+                            sideOffset={8}
+                            avoidCollisions={false}
+                        >
+                            <Calendar
+                                mode="single"
+                                selected={dueDate}
+                                onSelect={(date: Date | undefined) => {
+                                    setDueDate(date)
+                                    // simpan ke items sebagai string ISO (bukan Date)
+                                    setItems((prev) =>
+                                        prev.map((it) =>
+                                            it.id === itemIdRef.current
+                                                ? { ...it, dueDate: date ? date.toISOString() : null }
+                                                : it,
+                                        ),
                                     )
-                                );
 
-                                if (!itemIsNewRef.current) {
-                                    void updateSubtask
-                                        .mutateAsync({
-                                            taskId,
-                                            subtaskId: itemIdRef.current,
-                                            payload: { dueDate: date ? date.toISOString() : null },
-                                        })
-                                        .catch((err) => console.error("Update due date failed:", err));
-                                }
-                                if (date) setIsCalendarOpen(false);
-                            }}
-                            initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
+                                    if (!itemIsNewRef.current) {
+                                        void updateSubtask
+                                            .mutateAsync({
+                                                taskId,
+                                                subtaskId: itemIdRef.current,
+                                                payload: { dueDate: date ? date.toISOString() : null },
+                                            })
+                                            .catch((err) =>
+                                                console.error("Update due date failed:", err),
+                                            )
+                                    }
+                                    if (date) setIsCalendarOpen(false)
+                                }}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+                ) : dueDate ? (
+                    // 🔒 no access → tampilkan tanggal saja, read-only
+                    <p
+                        className={cn(
+                            "text-xs text-muted-foreground",
+                            isOverdue(dueDate) && "text-red-500",
+                        )}
+                        title="Tenggat subtugas"
+                    >
+                        {formatDateTime2(dueDate)}
+                    </p>
+                ) : null}
             </div>
+
         </div>
     );
 }

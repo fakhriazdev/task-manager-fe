@@ -13,6 +13,8 @@ import SectionRowAction from '@/app/dashboard/projects/[id]/list/component/ui/se
 import type { Section } from '../../../types/task';
 import { Task } from "@/lib/project/projectTypes";
 import AddTaskRow from '@/app/dashboard/projects/[id]/list/component/ui/rows/AddTaskRow';
+import {useProjectPermission} from "@/hooks/useProjectPermission";
+import { cn } from '@/lib/utils';
 
 export type SectionVM = { id: string; name: string };
 
@@ -110,6 +112,7 @@ export function SectionTBody({
     const lastSavedNameRef = useRef(section.name);
 
     const { mutate: renameSection, isPending } = useUpdateSection();
+    const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
 
     const debouncedSave = useDebouncedCallback((pId: string, id: string, name: string) => {
         if (!pId || !name.trim()) return;
@@ -197,107 +200,139 @@ export function SectionTBody({
             id={`sec-${section.id}-rows`}
             data-section-id={section.id}
             style={secStyle}
-            className={`divide-x divide-border ${isOver ? 'bg-primary/5 transition-colors' : ''} ${sectionDragging ? 'ring-2 ring-primary/30' : ''} ${isPending ? 'opacity-60' : ''}`}
+            className={cn(
+                isOver && "bg-primary/5 transition-colors",
+                sectionDragging && "ring-2 ring-primary/30",
+                isPending && "opacity-60",
+            )}
         >
             {/* Section Header Row */}
-            <TableRow className="bg-card relative">
-                <TableCell colSpan={5}>
-                    <div className="flex items-center justify-between">
-                        {/* jadikan wrapper ini sebagai group */}
-                        <div className="group/name flex items-center min-w-0 flex-1 gap-1">
-                            <button
-                                ref={setSectionHandleRef}
-                                {...(!dragDisabled ? { ...sectionAttrs, ...sectionListeners } : {})}
-                                className={[
-                                    // hidden by default
-                                    'opacity-0 pointer-events-none',
-                                    // show saat hover nama/row
-                                    'group-hover/name:opacity-100 group-hover/name:pointer-events-auto',
-                                    // aksesibilitas
-                                    'focus-visible:opacity-100 focus-visible:pointer-events-auto',
-                                    // style lainnya
-                                    'shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-transparent rounded transition-opacity',
-                                    dragDisabled ? 'opacity-40 cursor-not-allowed' : '',
-                                ].join(' ')}
-                                aria-label="Drag section"
-                                title={dragDisabled ? 'Drag disabled while editing or saving' : 'Drag section'}
-                                type="button"
-                                disabled={dragDisabled}
-                                onMouseDown={(e) => {
-                                    if (editing) e.preventDefault();
-                                }}
-                            >
-                                <GripVertical size={16} />
-                            </button>
-                            {!editing && (
+                <TableRow className="bg-accent relative divide-x divide-foreground/40">
+                    <TableCell colSpan={5}>
+                        <div className="flex items-center justify-between">
+                            {/* jadikan wrapper ini sebagai group */}
+                            <div className="group/name flex items-center min-w-0 flex-1 gap-1">
+                                {/* Drag section – tetap boleh, cuma cek dragDisabled */}
                                 <button
-                                    type="button"
-                                    onClick={() => onToggle?.(section.id)}
-                                    aria-expanded={!collapsed}
-                                    aria-controls={`sec-${section.id}-rows`}
+                                    ref={setSectionHandleRef}
+                                    {...(!dragDisabled ? { ...sectionAttrs, ...sectionListeners } : {})}
                                     className={[
-                                        'p-1 rounded hover:bg-muted focus-visible:outline-none',
-                                        menuOpen ? 'opacity-100 pointer-events-auto' : '',
-                                    ].join(' ')}
-                                    title={collapsed ? 'Expand section' : 'Collapse section'}
-                                    onMouseDown={(e) => e.stopPropagation()}
+                                        // hidden by default
+                                        "opacity-0 pointer-events-none",
+                                        // show saat hover nama/row
+                                        "group-hover/name:opacity-100 group-hover/name:pointer-events-auto",
+                                        // aksesibilitas
+                                        "focus-visible:opacity-100 focus-visible:pointer-events-auto",
+                                        // style lainnya
+                                        "shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-transparent rounded transition-opacity",
+                                        dragDisabled ? "opacity-40 cursor-not-allowed" : "",
+                                    ].join(" ")}
+                                    aria-label="Drag section"
+                                    title={
+                                        dragDisabled
+                                            ? "Drag disabled while editing or saving"
+                                            : "Drag section"
+                                    }
+                                    type="button"
+                                    disabled={dragDisabled}
+                                    onMouseDown={(e) => {
+                                        if (editing) e.preventDefault()
+                                    }}
                                 >
-                                    <ChevronDown
-                                        size={16}
-                                        className={`transition-transform ${collapsed ? '-rotate-90' : 'rotate-0'}`}
-                                    />
+                                    <GripVertical size={16} />
                                 </button>
-                            )}
 
-                            <div className="relative flex items-center min-w-0 flex-1">
-                                <SectionName
-                                    name={section.name}
-                                    editing={editing}
-                                    tempName={tempName}
-                                    onEdit={() => !isPending && setEditing(true)}
-                                    onTempNameChange={handleNameChange}
-                                    onCommit={commit}
-                                    onCancel={cancel}
-                                    inputRef={inputRef}
-                                />
-
+                                {/* Expand / Collapse – boleh untuk semua */}
                                 {!editing && (
-                                    <div className="ml-2 flex items-center gap-1">
-                                        <div
-                                            className={[
-                                                'transition-opacity',
-                                                'opacity-0 pointer-events-none',
-                                                'group-hover/name:opacity-100 group-hover/name:pointer-events-auto',
-                                                menuOpen ? 'opacity-100 pointer-events-auto' : '',
-                                            ].join(' ')}
-                                            onMouseDown={(e) => e.stopPropagation()}
-                                        >
-                                            <SectionRowAction
-                                                currentSection={minimalSection}
-                                                open={menuOpen}
-                                                onOpenChange={setMenuOpen}
-                                            />
+                                    <button
+                                        type="button"
+                                        onClick={() => onToggle?.(section.id)}
+                                        aria-expanded={!collapsed}
+                                        aria-controls={`sec-${section.id}-rows`}
+                                        className={[
+                                            "p-1 rounded hover:bg-muted focus-visible:outline-none",
+                                            menuOpen ? "opacity-100 pointer-events-auto" : "",
+                                        ].join(" ")}
+                                        title={collapsed ? "Expand section" : "Collapse section"}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                    >
+                                        <ChevronDown
+                                            size={16}
+                                            className={`transition-transform ${
+                                                collapsed ? "-rotate-90" : "rotate-0"
+                                            }`}
+                                        />
+                                    </button>
+                                )}
+
+                                <div className="relative flex items-center min-w-0 flex-1">
+                                    {/* Nama section – di-lock kalau tidak punya akses */}
+                                    <SectionName
+                                        name={section.name}
+                                        editing={editing && hasAccess}
+                                        tempName={tempName}
+                                        onEdit={() => {
+                                            if (!hasAccess || isPending) return
+                                            setEditing(true)
+                                        }}
+                                        onTempNameChange={(val) => {
+                                            if (!hasAccess) return
+                                            handleNameChange(val)
+                                        }}
+                                        onCommit={() => {
+                                            if (!hasAccess) {
+                                                setEditing(false)
+                                                return
+                                            }
+                                            commit()
+                                        }}
+                                        onCancel={cancel}
+                                        inputRef={inputRef}
+                                    />
+
+                                    {/* Section actions (menu) – HANYA kalau punya akses & tidak editing */}
+                                    {!editing && hasAccess && (
+                                        <div className="ml-2 flex items-center gap-1">
+                                            <div
+                                                className={[
+                                                    "transition-opacity",
+                                                    "opacity-0 pointer-events-none",
+                                                    "group-hover/name:opacity-100 group-hover/name:pointer-events-auto",
+                                                    menuOpen ? "opacity-100 pointer-events-auto" : "",
+                                                ].join(" ")}
+                                                onMouseDown={(e) => e.stopPropagation()}
+                                            >
+                                                <SectionRowAction
+                                                    currentSection={minimalSection}
+                                                    open={menuOpen}
+                                                    onOpenChange={setMenuOpen}
+                                                />
+                                            </div>
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* Info jumlah task – read-only, semua boleh lihat */}
+                                {!editing && (
+                                    <div className="text-xs text-muted-foreground shrink-0">
+                                        {tasks.length} task
+                                        {tasks.length !== 1 ? "s" : ""}
+                                        {isPending && " • Saving..."}
                                     </div>
                                 )}
                             </div>
-
-                            {!editing && (
-                                <div className="text-xs text-muted-foreground shrink-0">
-                                    {tasks.length} task{tasks.length !== 1 ? 's' : ''}{isPending && ' • Saving...'}
-                                </div>
-                            )}
                         </div>
-                    </div>
-                </TableCell>
-            </TableRow>
+                    </TableCell>
+                </TableRow>
+
+
 
 
             {/* Task Rows - NO SortableContext wrapper */}
             {collapsed ? (
                 isDraggingTask ? (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-12 text-center text-xs text-muted-foreground">
+                        <TableCell colSpan={5} className="h-12 text-center text-xs text-primary">
                             Drop task here
                         </TableCell>
                     </TableRow>
@@ -312,12 +347,13 @@ export function SectionTBody({
                             disableDrag={!!disableDrop}
                         />
                     ))}
-
-                    <AddTaskRow
-                        colSpan={5}
-                        sectionId={section.id}
-                        disabled={!!isDraggingTask}
-                    />
+                    {hasAccess && (
+                        <AddTaskRow
+                            colSpan={5}
+                            sectionId={section.id}
+                            disabled={!!isDraggingTask}
+                        />
+                    )}
                 </>
             )}
         </TableBody>

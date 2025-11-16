@@ -1,24 +1,30 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import type { CommonResponse } from '@/lib/store/storeTypes'
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
+import {useRouter} from 'next/navigation'
+import type {CommonResponse} from '@/lib/store/storeTypes'
 import {
     AddSubTaskRequest,
-    AssigneeInput, CreateProjectPayload,
-    MoveSectionPayload, MoveSubTaskPayload,
+    AssigneeInput, Attachment,
+    CreateProjectPayload, DeleteAttachmentVariables, MemberRequest,
+    MoveSectionPayload,
+    MoveSubTaskPayload,
     MoveTaskPayload,
     Project,
-    ProjectDetail,
+    ProjectDetail, ProjectMemberResponse,
     Task,
     TaskList,
     TaskPatch,
-    TaskUpdateInput, UpdateSubTaskRequest,
+    TaskUpdateInput,
+    UpdateProjectPayload,
+    UpdateSubTaskRequest, UploadTaskAttachmentVariables,
 } from '@/lib/project/projectTypes'
 import ProjectService from '@/lib/project/projectService'
-import { Assignees } from "@/app/dashboard/projects/[id]/list/types/task"
+import projectService from '@/lib/project/projectService'
+import {Assignees} from "@/app/dashboard/projects/[id]/list/types/task"
 import {useMemo} from 'react'
 import {toast} from "sonner";
+import {AxiosProgressEvent} from "axios";
 
 
 // CONSTANTS & CONFIG
@@ -32,7 +38,8 @@ const qk = {
     projects: () => ['projects'] as const,
     project: (id?: string) => ['project', id] as const,
     tasks: (id?: string) => ['tasks', id] as const,
-    task: (projectId?: string, taskId?: string) => ['task', projectId, taskId] as const, // 👈 baru
+    task: (projectId?: string, taskId?: string) => ['task', projectId, taskId] as const,
+    taskAttachments: (taskId: string) => ['task-attachments', taskId] as const,
 }
 // ERROR HANDLING UTILITIES
 interface ApiError {
@@ -50,46 +57,71 @@ interface ApiError {
     }
 }
 
-function isForbiddenError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') return false
+function getStatusFromError(error: unknown): number | null {
+    if (!error || typeof error !== 'object') return null
 
     const err = error as ApiError
 
-    if (err.statusCode === 403 || err.status === 403) return true
+    // Urutan prioritas: response.data.statusCode -> response.status -> top-level statusCode/status
+    return (
+        err.response?.data?.statusCode ??
+        err.response?.status ??
+        err.statusCode ??
+        err.status ??
+        null
+    )
+}
+
+function isForbiddenError(error: unknown): boolean {
+    const status = getStatusFromError(error)
+    if (status === 403) return true
+
+    if (!error || typeof error !== 'object') return false
+    const err = error as ApiError
+
+    // Fallback kalau backend cuma ngirim string "Forbidden"
     if (err.error === 'Forbidden') return true
-
-    // Check nested response
-    if (err.response?.status === 403) return true
-    if (err.response?.data?.statusCode === 403) return true
-    if (err.response?.data?.error === 'Forbidden') return true
-
-    return false
+    return err.response?.data?.error === 'Forbidden';
 }
 
 function isClientError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') return false
-
-    const err = error as ApiError
-    const status = err.statusCode ?? err.status ?? err.response?.status ?? 0
+    const status = getStatusFromError(error)
+    if (!status) return false
 
     return status >= 400 && status < 500
+}
+
+function isNotFoundError(error: unknown): boolean {
+    const status = getStatusFromError(error)
+    return status === 404
 }
 
 function useErrorHandler(projectId?: string) {
     const router = useRouter()
 
     return (error: unknown) => {
+        // 🔹 403 → lempar ke /forbidden
         if (isForbiddenError(error)) {
             const queryParams = new URLSearchParams()
             queryParams.set('reason', 'project-access')
-            if (projectId) {
-                queryParams.set('id', projectId)
-            }
+            if (projectId) queryParams.set('id', projectId)
 
-            router.push(`/forbidden?${queryParams.toString()}`)
+            router.replace(`/forbidden?${queryParams.toString()}`)
+            return
         }
+
+        // 🔹 404 → lempar ke halaman 404
+        if (isNotFoundError(error)) {
+            // bisa juga /dashboard/not-found kalau kamu punya segmen khusus
+            router.replace('/404')
+            return
+        }
+
+        // 🔹 error lain → log atau bisa kamu sambung ke toast global
+        console.error('Unhandled API error', error, 'context projectId:', projectId)
     }
 }
+
 
 
 // UTILITY FUNCTIONS
@@ -111,11 +143,7 @@ const insertAt = <T,>(arr: T[], idx: number, item: T): T[] => {
     return [...arr.slice(0, i), item, ...arr.slice(i)]
 }
 
-const computeInsertIndex = (
-    ids: string[],
-    beforeId?: string | null,
-    afterId?: string | null
-): number => {
+const computeInsertIndex = (ids: string[], beforeId?: string | null, afterId?: string | null): number => {
     if (beforeId) {
         const j = ids.findIndex((x) => x === beforeId)
         if (j !== -1) return j
@@ -154,7 +182,7 @@ const assertNever = (x: never): never => {
     throw new Error(`Unhandled case: ${JSON.stringify(x)}`)
 }
 
-const toPatch = (input: TaskUpdateInput): TaskPatch => {
+const toPatchTask = (input: TaskUpdateInput): TaskPatch => {
     switch (input.type) {
         case 'rename':
             return { name: input.name.trim() }
@@ -165,9 +193,7 @@ const toPatch = (input: TaskUpdateInput): TaskPatch => {
         case 'setStatus':
             return { status: input.status }
         case 'setAssignees':
-            return {
-                assignees: input.assignees.map((a) => ({ nik: a.nik, name: a.name })),
-            }
+            return {assignees: input.assignees.map((a) => ({ nik: a.nik })),}
         default:
             return assertNever(input as never)
     }
@@ -175,16 +201,21 @@ const toPatch = (input: TaskUpdateInput): TaskPatch => {
 
 const mergeAssigneesOptimistic = (
     prev: Assignees[] | null | undefined,
-    incoming: AssigneeInput[]
+    incoming: AssigneeInput[],
 ): Assignees[] => {
     const prevMap = new Map((prev ?? []).map((a) => [a.nik, a]))
+
     return incoming.map((a) => {
         const kept = prevMap.get(a.nik)
         return kept
-            ? { ...kept, name: a.name }
-            : { nik: a.nik, name: a.name, assignedAt: new Date() }
+            ? kept // pakai data lama (nik + nama)
+            : {
+                nik: a.nik,
+                nama: '...', // placeholder sampai data fresh dari server datang
+            }
     })
 }
+
 
 const applyOptimistic = (t: Task, input: TaskUpdateInput): Task => {
     switch (input.type) {
@@ -202,14 +233,17 @@ const applyOptimistic = (t: Task, input: TaskUpdateInput): Task => {
         }
         case 'setStatus':
             return input.status !== t.status ? { ...t, status: input.status } : t
+
         case 'setAssignees': {
             const merged = mergeAssigneesOptimistic(t.assignees, input.assignees)
             return { ...t, assignees: merged }
         }
+
         default:
             return assertNever(input as never)
     }
 }
+
 
 
 // HOOKS
@@ -269,14 +303,17 @@ export function useNewProjectAction() {
     });
 }
 
-
-
-export function useProjectDetailAction(idProject?: string) {
+export function useProjectDetailAction(idProject?: string,  options?: {
+    enablePolling?: boolean
+    enabled?: boolean
+},) {
     const handleError = useErrorHandler(idProject)
+    const enablePolling = options?.enablePolling ?? false
+    const enabled       = options?.enabled ?? true
 
     return useQuery({
         queryKey: qk.project(idProject),
-        enabled: !!idProject,
+        enabled: !!idProject && enabled,
         queryFn: async () => {
             try {
                 const res: CommonResponse<ProjectDetail> =
@@ -287,6 +324,13 @@ export function useProjectDetailAction(idProject?: string) {
                 throw error
             }
         },
+        refetchInterval: (query) => {
+            if (!enablePolling) return false
+            if (query.state.error) return false
+            return POLLING_INTERVAL
+        },
+        refetchIntervalInBackground: false,
+        refetchOnWindowFocus: true,
         staleTime: TASK_STALE_TIME,
         gcTime: TASK_GC_TIME,
         retry: (failureCount, error) => {
@@ -296,15 +340,18 @@ export function useProjectDetailAction(idProject?: string) {
     })
 }
 
-export function useProjectTasksAction(
-    idProject?: string,
-    enablePolling: boolean = false
-) {
+export function useProjectTasksAction(idProject?: string, options?: {
+        enablePolling?: boolean
+        enabled?: boolean
+    }) {
     const handleError = useErrorHandler(idProject)
+
+    const enablePolling = options?.enablePolling ?? false
+    const enabled = options?.enabled ?? !!idProject
 
     return useQuery({
         queryKey: qk.tasks(idProject),
-        enabled: !!idProject,
+        enabled,
         queryFn: async () => {
             try {
                 const res: CommonResponse<TaskList> =
@@ -332,15 +379,109 @@ export function useProjectTasksAction(
 }
 
 export function useLiveTask(projectId?: string, taskId?: string) {
-    const { data: taskList } = useProjectTasksAction(projectId, false)
+    const { data: taskList } = useProjectTasksAction(projectId, {
+        enablePolling: false,                  // live view tapi tanpa polling
+        enabled: !!projectId && !!taskId,      // cuma fetch kalau dua-duanya ada
+    })
+
     return useMemo(() => {
         if (!projectId || !taskId || !taskList) return null
         return findTaskById(taskList, taskId)
     }, [projectId, taskId, taskList])
 }
 
+export function useUpdateProjectAction(idProject?: string) {
+    const queryClient = useQueryClient()
 
-// MUTATION HOOKS
+    return useMutation<
+        CommonResponse<string>,
+        Error,
+        UpdateProjectPayload
+    >({
+        mutationKey: ['project-update', idProject],
+        mutationFn: async (payload:UpdateProjectPayload) => {
+            if (!idProject) {
+                throw new Error('Project id is required')
+            }
+            return projectService.updateProjectById(idProject, payload)
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: qk.projects(),
+            })
+            if (idProject) {
+                await queryClient.invalidateQueries({
+                    queryKey: qk.project(idProject),
+                })
+            }
+        },
+    })
+}
+
+
+export function useDeleteProjectAction() {
+    const queryClient = useQueryClient()
+
+    return useMutation<CommonResponse<string>, Error, { projectId: string }>({
+        mutationKey: ['project-delete'],
+        mutationFn: async ({ projectId }) => {
+            if (!projectId) {
+                throw new Error('Project id is required')
+            }
+            return projectService.deleteProjectById(projectId)
+        },
+        onSuccess: async (_res, { projectId }) => {
+            await queryClient.invalidateQueries({ queryKey: qk.projects() })
+            await queryClient.invalidateQueries({ queryKey: qk.project(projectId) })
+        },
+    })
+}
+
+const UUID_REGEX =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isUuid = (v: string) => UUID_REGEX.test(v);
+
+export function useTaskAttachmentsAction(taskId: string) {
+    const enabled = isUuid(taskId);
+
+    return useQuery<Attachment[], Error>({
+        queryKey: qk.taskAttachments(taskId),
+        enabled,
+        queryFn: async () => {
+            if (!isUuid(taskId)) {
+                throw new Error('taskId harus UUID');
+            }
+
+            const res = await projectService.getAttachmentsByTaskId(taskId);
+            return res.data;
+        },
+    });
+}
+
+//memberProject
+export const useSyncMemberProjectAction = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation<
+        CommonResponse<ProjectMemberResponse[]>, // TData (response)
+        Error,                                   // TError
+        { projectId: string; members: MemberRequest[] } // TVariables ✅ array
+    >({
+        mutationFn: async ({ projectId, members }) => {
+            return projectService.syncMemberProject(projectId, members);
+        },
+        onSuccess: (_res, { projectId }) => {
+            // Invalidasi cache yang relevan setelah sync member sukses
+            queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+            queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
+            // kalau kamu punya board/tasks yg ikut terpengaruh:
+            // queryClient.invalidateQueries({ queryKey: ['project', projectId, 'tasks'] });
+        },
+    });
+};
+
+//Task
 type CreateVars = {
     name: string;
     section?: string | null;
@@ -456,7 +597,7 @@ export const useUpdateTask = (projectId?: string) => {
 
         mutationFn: async (input) => {
             try {
-                const patch = toPatch(input)
+                const patch = toPatchTask(input)
 
                 if (input.type === 'rename' && !patch.name) {
                     throw new Error('Name cannot be empty')
@@ -508,12 +649,222 @@ export const useUpdateTask = (projectId?: string) => {
     })
 }
 
+export function useDeleteTaskAction() {
+    const queryClient = useQueryClient();
+
+    return useMutation<CommonResponse<string>, Error, { projectId:string,taskId:string }>({
+        mutationFn: ({ taskId }) => projectService.deleteTask(taskId),
+        onSuccess: (_data, { taskId, projectId }) => {
+            // invalidate list task di project terkait
+            if (projectId) {
+                queryClient.invalidateQueries({ queryKey: qk.tasks(projectId) });
+                queryClient.invalidateQueries({ queryKey: qk.task(projectId, taskId) });
+                // kalau ada detail project yang nampilin jumlah task, dsb:
+                queryClient.invalidateQueries({ queryKey: qk.project(projectId) });
+            } else {
+                // fallback: invalidate semua tasks (kalau dipakai global)
+                queryClient.invalidateQueries({ queryKey: qk.tasks() });
+            }
+        },
+    });
+}
+
+export function useMoveTask(projectId: string) {
+    const qc = useQueryClient()
+    const key = qk.tasks(projectId)
+    const handleError = useErrorHandler(projectId)
+
+    return useMutation<
+        CommonResponse<{ id: string; id_dt_section: string | null; rank?: string }>,
+        Error,
+        { taskId: string; payload: MoveTaskPayload },
+        { prev?: TaskList }
+    >({
+        mutationKey: ['task-move', projectId],
+
+        mutationFn: async ({ taskId, payload }) => {
+            try {
+                return await ProjectService.moveTask(projectId, taskId, payload)
+            } catch (error) {
+                handleError(error)
+                throw error
+            }
+        },
+
+        onMutate: async ({ taskId, payload }) => {
+            await qc.cancelQueries({ queryKey: key })
+            const prev = qc.getQueryData<TaskList>(key)
+
+            if (!prev) return { prev }
+
+            const next: TaskList = {
+                unlocated: [...(prev.unlocated ?? [])],
+                sections: (prev.sections ?? []).map(s => ({
+                    ...s,
+                    tasks: [...(s.tasks ?? [])]
+                })),
+            }
+
+            let moving: Task | null = null
+            let originSectionId: string | null = null
+
+            const idxU = next.unlocated.findIndex(t => t.id === taskId)
+            if (idxU !== -1) {
+                moving = next.unlocated[idxU]
+                next.unlocated.splice(idxU, 1)
+                originSectionId = null
+            }
+
+            if (!moving) {
+                for (const s of next.sections) {
+                    const i = s.tasks.findIndex(t => t.id === taskId)
+                    if (i !== -1) {
+                        moving = s.tasks[i]
+                        s.tasks.splice(i, 1)
+                        originSectionId = s.id
+                        break
+                    }
+                }
+            }
+
+            if (!moving) {
+                console.warn('Task not found for move:', taskId)
+                return { prev }
+            }
+
+            const {
+                targetSectionId,
+                beforeId: rawBeforeId = null,
+                afterId: rawAfterId = null
+            } = payload
+
+            const beforeId = rawBeforeId === taskId ? null : rawBeforeId
+            const afterId = rawAfterId === taskId ? null : rawAfterId
+
+            const insertWithOrder = (list: Task[]) => {
+                const ids = list.map(t => t.id)
+                const ins = computeInsertIndex(ids, beforeId, afterId)
+                return insertAt(list, ins, moving as Task)
+            }
+
+            const isInPlace =
+                targetSectionId !== null &&
+                originSectionId !== null &&
+                targetSectionId === originSectionId
+
+            if (targetSectionId === null) {
+                next.unlocated = insertWithOrder(next.unlocated)
+            } else if (isInPlace) {
+                const sec = next.sections.find(s => s.id === originSectionId)
+                if (sec) {
+                    sec.tasks = insertWithOrder(sec.tasks)
+                } else {
+                    next.unlocated = insertWithOrder(next.unlocated)
+                }
+            } else {
+                const target = next.sections.find(s => s.id === targetSectionId)
+                if (target) {
+                    target.tasks = insertWithOrder(target.tasks)
+                } else {
+                    next.unlocated = insertWithOrder(next.unlocated)
+                }
+            }
+
+            qc.setQueryData<TaskList>(key, next)
+            return { prev }
+        },
+
+        onError: (error, vars, ctx) => {
+            if (ctx?.prev) {
+                qc.setQueryData<TaskList>(key, ctx.prev)
+            }
+
+            if (!isForbiddenError(error)) {
+                console.error('Task move failed:', {
+                    error: error.message,
+                    taskId: vars.taskId,
+                    projectId,
+                })
+            }
+        },
+
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey: key })
+        },
+
+        retry: (failureCount, error) => {
+            if (isForbiddenError(error)) return false
+            return failureCount < MAX_RETRY_COUNT && !isClientError(error)
+        },
+    })
+}
+
+export const useUploadTaskAttachmentAction = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+                               taskId,
+                               files,
+                               onProgress,
+                           }: UploadTaskAttachmentVariables) => {
+            const formData = new FormData();
+
+            files.forEach((file) => {
+                // HARUS sama dengan FilesInterceptor('attachments', 10)
+                formData.append('attachments', file);
+            });
+
+            const res = await projectService.uploadTaskAttachmen(
+                taskId,
+                formData,
+                {
+                    onUploadProgress: (event: AxiosProgressEvent) => {
+                        if (!event.total) return;
+                        const percent = Math.round((event.loaded * 100) / event.total);
+                        onProgress?.(percent);
+                    },
+                },
+            );
+
+            return res;
+        },
+
+        onSuccess: (_data, variables) => {
+            const { taskId } = variables;
+            queryClient.invalidateQueries({
+                queryKey: qk.task(taskId),
+            });
+            queryClient.invalidateQueries({
+                queryKey: qk.taskAttachments(taskId),
+            });
+        },
+    });
+};
+
+export function useDeleteAttachmentAction() {
+    const queryClient = useQueryClient();
+
+    return useMutation<CommonResponse<string>, Error, DeleteAttachmentVariables>({
+        mutationFn: async ({ taskId, attachmentIds }) => {
+            toast.loading('deleteing attachment...');
+            const payload = attachmentIds.map((id) => ({ id }));
+            return projectService.deleteAttachmentByTaskId(taskId, payload);
+        },
+        onSuccess: (_data, { taskId }) => {
+            toast.dismiss()
+            toast.success('Attachment deleted');
+            queryClient.invalidateQueries({ queryKey: qk.taskAttachments(taskId) });
+        },
+    });
+}
+
+//section
 type CreateSectionVars = {
     name: string;
     beforeId?: string | null;
     afterId?: string | null;
 };
-
 export const useCreateSectionAction = (projectId?: string) => {
     const qc = useQueryClient();
     const key = ['tasks', projectId] as const;
@@ -806,135 +1157,6 @@ export function useMoveSection(projectId: string) {
     })
 }
 
-export function useMoveTask(projectId: string) {
-    const qc = useQueryClient()
-    const key = qk.tasks(projectId)
-    const handleError = useErrorHandler(projectId)
-
-    return useMutation<
-        CommonResponse<{ id: string; id_dt_section: string | null; rank?: string }>,
-        Error,
-        { taskId: string; payload: MoveTaskPayload },
-        { prev?: TaskList }
-    >({
-        mutationKey: ['task-move', projectId],
-
-        mutationFn: async ({ taskId, payload }) => {
-            try {
-                return await ProjectService.moveTask(projectId, taskId, payload)
-            } catch (error) {
-                handleError(error)
-                throw error
-            }
-        },
-
-        onMutate: async ({ taskId, payload }) => {
-            await qc.cancelQueries({ queryKey: key })
-            const prev = qc.getQueryData<TaskList>(key)
-
-            if (!prev) return { prev }
-
-            const next: TaskList = {
-                unlocated: [...(prev.unlocated ?? [])],
-                sections: (prev.sections ?? []).map(s => ({
-                    ...s,
-                    tasks: [...(s.tasks ?? [])]
-                })),
-            }
-
-            let moving: Task | null = null
-            let originSectionId: string | null = null
-
-            const idxU = next.unlocated.findIndex(t => t.id === taskId)
-            if (idxU !== -1) {
-                moving = next.unlocated[idxU]
-                next.unlocated.splice(idxU, 1)
-                originSectionId = null
-            }
-
-            if (!moving) {
-                for (const s of next.sections) {
-                    const i = s.tasks.findIndex(t => t.id === taskId)
-                    if (i !== -1) {
-                        moving = s.tasks[i]
-                        s.tasks.splice(i, 1)
-                        originSectionId = s.id
-                        break
-                    }
-                }
-            }
-
-            if (!moving) {
-                console.warn('Task not found for move:', taskId)
-                return { prev }
-            }
-
-            const {
-                targetSectionId,
-                beforeId: rawBeforeId = null,
-                afterId: rawAfterId = null
-            } = payload
-
-            const beforeId = rawBeforeId === taskId ? null : rawBeforeId
-            const afterId = rawAfterId === taskId ? null : rawAfterId
-
-            const insertWithOrder = (list: Task[]) => {
-                const ids = list.map(t => t.id)
-                const ins = computeInsertIndex(ids, beforeId, afterId)
-                return insertAt(list, ins, moving as Task)
-            }
-
-            const isInPlace =
-                targetSectionId !== null &&
-                originSectionId !== null &&
-                targetSectionId === originSectionId
-
-            if (targetSectionId === null) {
-                next.unlocated = insertWithOrder(next.unlocated)
-            } else if (isInPlace) {
-                const sec = next.sections.find(s => s.id === originSectionId)
-                if (sec) {
-                    sec.tasks = insertWithOrder(sec.tasks)
-                } else {
-                    next.unlocated = insertWithOrder(next.unlocated)
-                }
-            } else {
-                const target = next.sections.find(s => s.id === targetSectionId)
-                if (target) {
-                    target.tasks = insertWithOrder(target.tasks)
-                } else {
-                    next.unlocated = insertWithOrder(next.unlocated)
-                }
-            }
-
-            qc.setQueryData<TaskList>(key, next)
-            return { prev }
-        },
-
-        onError: (error, vars, ctx) => {
-            if (ctx?.prev) {
-                qc.setQueryData<TaskList>(key, ctx.prev)
-            }
-
-            if (!isForbiddenError(error)) {
-                console.error('Task move failed:', {
-                    error: error.message,
-                    taskId: vars.taskId,
-                    projectId,
-                })
-            }
-        },
-
-        onSettled: () => {
-            qc.invalidateQueries({ queryKey: key })
-        },
-
-        retry: (failureCount, error) => {
-            if (isForbiddenError(error)) return false
-            return failureCount < MAX_RETRY_COUNT && !isClientError(error)
-        },
-    })
-}
 
 //task-detail
 export const useAddSubTask = (projectId: string, taskId: string) => {
@@ -987,6 +1209,7 @@ export const useAddSubTask = (projectId: string, taskId: string) => {
                 name: payload.name,
                 status: false,
                 dueDate: null,
+                assignees:[]
             }
 
             t.subTask = [...(t.subTask ?? []), optimistic]
@@ -1218,6 +1441,27 @@ export function useMoveSubTask(projectId: string) {
         retry: (n, err) => !isForbiddenError(err) && n < MAX_RETRY_COUNT && !isClientError(err),
     })
 }
+
+export function useSyncSubTaskAssigneesAction(projectId: string) {
+    const qc = useQueryClient();
+    return useMutation<
+        CommonResponse<string>,
+        Error,
+        { taskId: string; subtaskId: string; assignees: { nik: string }[] }
+    >({
+        mutationKey: ['subtask-sync-assignees', projectId],
+
+        mutationFn: async ({ taskId, subtaskId, assignees }) => {
+            return await projectService.syncSubTaskAssignees(taskId, subtaskId, assignees);
+        },
+
+        onSuccess: (_res, { taskId }) => {
+            qc.invalidateQueries({ queryKey: qk.tasks(projectId) });
+            qc.invalidateQueries({ queryKey: qk.task(projectId, taskId) });
+        },
+    });
+}
+
 
 
 

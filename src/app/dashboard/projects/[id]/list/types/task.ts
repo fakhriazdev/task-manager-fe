@@ -3,8 +3,7 @@
 
 export interface Assignees {
     nik: string;
-    name: string;
-    assignedAt: Date;
+    nama: string;
 }
 export interface Task {
     section: string;

@@ -19,7 +19,7 @@ import {
     ListTree,
 } from 'lucide-react'
 import { initials } from '../../../types/TaskTable.const'
-import { useUpdateTask} from '@/lib/project/projectAction'
+import {useProjectDetailAction, useUpdateTask} from '@/lib/project/projectAction'
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback'
 import { useProjectStore } from '@/lib/stores/useProjectStore'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,7 @@ import type { Task } from '@/lib/project/projectTypes'
 import SubTaskRow from '@/app/dashboard/projects/[id]/list/component/ui/rows/SubTaskRow'
 import {cn, formatDateTime2, isOverdue} from '@/lib/utils'
 import AssigneePicker from "@/app/dashboard/projects/[id]/list/component/AssigneePicker";
+import {useProjectPermission} from "@/hooks/useProjectPermission";
 
 
 export type TaskTRProps = {
@@ -47,7 +48,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
         } = useSortable({ id: task.id, disabled: !!disableDrag })
         const setOpen = useProjectStore((s) => s.setOpen)
         const setCurrentRow = useProjectStore((s) => s.setCurrentRow)
-
+        const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
         const style: React.CSSProperties = {
             transform: CSS.Transform.toString(transform),
             transition,
@@ -133,44 +134,53 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
         const [expanded, setExpanded] = useState(false)
         const toggleExpanded = useCallback(() => setExpanded((p) => !p), [])
         const hasSubtasks = (task.subTask?.length ?? 0) > 0
+        const {data: project} = useProjectDetailAction(projectId)
 
         return (
             <>
                 <TableRow
                     ref={setNodeRef}
                     style={style}
-                    className={`transform-gpu select-none transition-colors duration-150
-        ${isDragging ? 'ring-2 ring-primary/30 bg-secondary/60' : 'hover:bg-muted/40'}
-        divide-x divide-border border-b last:border-0`}
+                    className={cn(
+                        "transform-gpu select-none transition-colors duration-150",
+                        isDragging
+                            ? "ring-2 ring-primary/30 bg-secondary/60"
+                            : "hover:bg-muted/40",
+                        // garis vertikal antar kolom (semua td kecuali terakhir)
+                        "[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-foreground/15",
+                        // kalau mau garis horizontal row juga:
+                        "border-y border-foreground/15"
+                    )}
                     aria-grabbed={isDragging || undefined}
                 >
                     {/* Col 1: Drag, expand, name+status, open detail */}
                     <TableCell className="p-2" colSpan={2}>
                         <div className="h-full flex items-center gap-1 min-w-0 group/item">
+                            {/* Drag handle – tetap boleh */}
                             <button
                                 ref={setActivatorNodeRef}
                                 {...(!dragDisabled ? { ...attributes, ...listeners } : {})}
-                                style={!dragDisabled ? { touchAction: 'none' } : undefined}
+                                style={!dragDisabled ? { touchAction: "none" } : undefined}
                                 type="button"
-                                aria-label={dragDisabled ? 'Drag disabled' : 'Drag task'}
+                                aria-label={dragDisabled ? "Drag disabled" : "Drag task"}
                                 disabled={dragDisabled}
                                 className={cn(
-                                    // base style
-                                    'shrink-0 rounded text-muted-foreground hover:text-foreground hover:bg-transparent',
-                                    'transition-colors cursor-grab active:cursor-grabbing',
-                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-                                    'disabled:opacity-40 disabled:cursor-not-allowed',
-
-                                    // hidden by default, show on row hover (via group/item), on focus, or while dragging
-                                    !dragDisabled && !isDragging && 'opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto',
-                                    !dragDisabled && 'focus:opacity-100 focus:pointer-events-auto',
-                                    isDragging && 'opacity-100 pointer-events-auto'
+                                    "shrink-0 rounded text-muted-foreground hover:text-foreground hover:bg-transparent",
+                                    "transition-colors cursor-grab active:cursor-grabbing",
+                                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                                    "disabled:opacity-40 disabled:cursor-not-allowed",
+                                    !dragDisabled &&
+                                    !isDragging &&
+                                    "opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto",
+                                    !dragDisabled &&
+                                    "focus:opacity-100 focus:pointer-events-auto",
+                                    isDragging && "opacity-100 pointer-events-auto",
                                 )}
                             >
                                 <GripVertical size={16} />
                             </button>
 
-
+                            {/* Expand subtasks */}
                             {hasSubtasks && (
                                 <Button
                                     variant="ghost"
@@ -186,29 +196,50 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                                 </Button>
                             )}
 
-                            <div className={`flex-1 min-w-0 ${!hasSubtasks && "ml-2"}`}>
+                            {/* Task name + status */}
+                            <div className={cn("flex-1 min-w-0", !hasSubtasks && "ml-7")}>
                                 <TaskName
                                     name={tempName}
                                     lengthSubTask={task.subTask?.length ?? 0}
                                     status={Boolean(task.status)}
-                                    editing={editing}
+
+                                    // ⬇️ EDIT NAMA DI-LOCK PAKAI hasAccess
+                                    editing={editing && hasAccess}
                                     tempName={tempName}
-                                    onEdit={onEditStart}
-                                    onTempNameChange={handleNameChange}
-                                    onCommit={commit}
-                                    onCancel={cancel}
+                                    onEdit={() => {
+                                        if (!hasAccess) return
+                                        onEditStart()
+                                    }}
+                                    onTempNameChange={(next) => {
+                                        if (!hasAccess) return
+                                        handleNameChange(next)
+                                    }}
+                                    onCommit={() => {
+                                        if (!hasAccess) return
+                                        commit()
+                                    }}
+                                    onCancel={() => {
+                                        if (!hasAccess) return
+                                        cancel()
+                                    }}
+
+                                    // ⬇️ STATUS TETAP BOLEH DITEKAN WALAU hasAccess = false
                                     onToggleStatus={handleToggleStatus}
+
                                     inputRef={inputRef}
                                 />
                             </div>
 
+                            {/* Open detail – semua boleh */}
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 type="button"
-                                className="w-7 h-7 rounded-full transition opacity-0 translate-x-2 pointer-events-none
-              group-hover/item:opacity-100 group-hover/item:translate-x-0 group-hover/item:pointer-events-auto
-              focus:opacity-100 focus:translate-x-0"
+                                className={cn(
+                                    "w-7 h-7 rounded-full transition opacity-0 translate-x-2 pointer-events-none",
+                                    "group-hover/item:opacity-100 group-hover/item:translate-x-0 group-hover/item:pointer-events-auto",
+                                    "focus:opacity-100 focus:translate-x-0",
+                                )}
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onTouchStart={(e) => e.stopPropagation()}
                                 onClick={openDetail}
@@ -218,10 +249,14 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                         </div>
                     </TableCell>
 
+
+
                     {/* Col 2: Assignees */}
                     <TableCell className="py-2 px-2 align-middle">
                         <AssigneePicker
-                            task={{ id: task.id, assignees: task.assignees }} // [{ nik, name }]
+                            hasAccess={hasAccess}
+                            currentMembers={task.assignees}
+                            members={project?.members ?? []}
                             onChange={(next) => updateTask({ type: "setAssignees", id: task.id, assignees: next })}
                         />
                     </TableCell>
@@ -261,7 +296,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                 </TableRow>
 
                 {expanded && (
-                    <SubTaskRow taskId={task.id} projectId={projectId} subtasks={task.subTask || []} />
+                    <SubTaskRow taskId={task.id} projectId={projectId} subtasks={task.subTask || []} membersTask={task.assignees || []} />
                 )}
             </>
         )
@@ -281,7 +316,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
             (prev.task.assignees ?? []).every(
                 (a, i) =>
                     a?.nik === next.task.assignees?.[i]?.nik &&
-                    a?.name === next.task.assignees?.[i]?.name,
+                    a?.nama === next.task.assignees?.[i]?.nama,
             )
         if (!sameAssignees) return false
 

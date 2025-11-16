@@ -49,3 +49,57 @@ export const applyRoleBasedAccessRules = <
         }
     });
 };
+
+export const allowedMimes: ReadonlyArray<string> = [
+    // Images
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/webp',
+    'image/gif',
+    'image/bmp',
+    'image/avif',
+    // Excel
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    // PowerPoint
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    // Text
+    'text/plain',
+];
+
+
+export const FILE_RULES = {
+    maxFiles: 5,
+    maxSizeBytes: 1 * 1024 * 1024, // 1 MB (match Multer limit)
+    accept: allowedMimes,
+} as const;
+
+export const ProjectAttachmentSchema = z.object({
+    attachments: z
+        .array(z.instanceof(File))
+        .min(1, 'Minimal 1 file.')
+        .max(FILE_RULES.maxFiles, `Maksimal ${FILE_RULES.maxFiles} file.`)
+        .superRefine((files, ctx) => {
+            for (const file of files) {
+                if (!allowedMimes.includes(file.type)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: `Tipe file ${file.name} tidak diizinkan.`,
+                        path: ['attachments'],
+                    });
+                }
+
+                if (file.size > FILE_RULES.maxSizeBytes) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: `${file.name} lebih dari ${Math.round(
+                            FILE_RULES.maxSizeBytes / 1024 / 1024,
+                        )} MB.`,
+                        path: ['attachments'],
+                    });
+                }
+            }
+        }),
+});

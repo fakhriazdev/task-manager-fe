@@ -9,6 +9,7 @@ import { UnlocatedTBody } from '@/app/dashboard/projects/[id]/list/component/ui/
 import { TABLE_MIN_W } from '@/app/dashboard/projects/[id]/list/types/TaskTable.const'
 import AddSection from '@/app/dashboard/projects/[id]/list/component/ui/section/AddSection'
 import { Task } from '@/lib/project/projectTypes'
+import {useProjectPermission} from "@/hooks/useProjectPermission";
 
 /* =========================
    Constants & Utils
@@ -138,6 +139,7 @@ export const TaskTableView = memo(function TaskTableView({
             isDraggingTask,
         ],
     )
+    const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
 
     const table = (
         <ScrollArea ref={rootRef} className="w-full">
@@ -153,7 +155,10 @@ export const TaskTableView = memo(function TaskTableView({
                         />
                     )}
                     {sectionRows}
-                    <AddSection projectId={projectId} colSpan={5} />
+                    {hasAccess && (
+                        <AddSection projectId={projectId} colSpan={5} />
+                    )}
+
                 </Table>
             </div>
             <ScrollBar orientation="horizontal" />

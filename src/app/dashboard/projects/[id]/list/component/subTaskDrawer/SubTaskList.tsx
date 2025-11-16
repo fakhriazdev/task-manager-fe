@@ -21,6 +21,7 @@ import {
     useUpdateSubTask,
     useLiveTask,
 } from '@/lib/project/projectAction'
+import {useProjectPermission} from "@/hooks/useProjectPermission";
 
 function equalSubtasks(a: SubTask[], b: SubTask[]) {
     if (a === b) return true
@@ -45,7 +46,6 @@ type Props = {
 }
 
 export default function SubtaskList({ projectId, taskId }: Props) {
-    // 1) Live data dari cache
     const liveTask = useLiveTask(projectId, taskId)
     const liveItems = useMemo<SubTask[]>(
         () => (Array.isArray(liveTask?.subTask) ? liveTask!.subTask : []),
@@ -79,6 +79,7 @@ export default function SubtaskList({ projectId, taskId }: Props) {
     const updateSubtask = useUpdateSubTask(projectId)
     const deleteSubtask = useDeleteSubTask(projectId)
     const moveSubtask = useMoveSubTask(projectId)
+    const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
 
     // 5) DnD sensors
     const sensors = useSensors(
@@ -163,6 +164,9 @@ export default function SubtaskList({ projectId, taskId }: Props) {
                     <div className="space-y-0" role="list">
                         {items.map((it) => (
                             <SortableSubtaskRow
+                                memberTask={liveTask?.assignees ?? []}
+                                projectId={projectId}
+                                hasAccess={hasAccess}
                                 key={it.id}
                                 item={it}
                                 taskId={taskId}
@@ -178,13 +182,15 @@ export default function SubtaskList({ projectId, taskId }: Props) {
                     Belum ada subtugas. Klik tombol di bawah untuk menambahkan.
                 </div>
             )}
+            {hasAccess && (
+                <div className="pt-2">
+                    <Button type="button" variant="ghost" onClick={addEmpty} className="justify-start">
+                        <Plus className="size-4" />
+                        Tambah subtugas
+                    </Button>
+                </div>
+            )}
 
-            <div className="pt-2">
-                <Button type="button" variant="ghost" onClick={addEmpty} className="justify-start">
-                    <Plus className="size-4" />
-                    Tambah subtugas
-                </Button>
-            </div>
         </div>
     )
 }

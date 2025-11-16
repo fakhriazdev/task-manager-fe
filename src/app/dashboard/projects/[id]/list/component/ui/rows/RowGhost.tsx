@@ -4,11 +4,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { initials } from "../../../types/TaskTable.const";
 
-type GhostAssignee = { nik: string; name: string };
+type GhostAssignee = { nik: string };
 
 export function TaskGhost({
                               name,
-                              assignees = [],
+                              // assignees = [],
                               creator,
                               dueLabel = "",
                           }: {
@@ -17,8 +17,8 @@ export function TaskGhost({
     creator?: { nama: string };
     dueLabel?: string;
 }) {
-    const top3 = assignees.slice(0, 3);
-    const extra = Math.max(assignees.length - 3, 0);
+    // const top3 = assignees.slice(0, 3);
+    // const extra = Math.max(assignees.length - 3, 0);
 
     return (
         <div
@@ -37,19 +37,19 @@ export function TaskGhost({
                 {/* Kolom 2: Assignee */}
                 <div className="py-2 px-2">
                     <div className="flex items-center -space-x-2">
-                        {top3.map((a) => (
-                            <Avatar key={a.nik} className="h-6 w-6 ring-2 ring-background" title={a.name}>
-                                <AvatarImage src="" alt={a.name} draggable={false} />
-                                <AvatarFallback className="text-[10px] font-semibold">
-                                    {initials(a.name)}
-                                </AvatarFallback>
-                            </Avatar>
-                        ))}
-                        {extra > 0 && (
-                            <Avatar className="h-6 w-6 ring-2 ring-background bg-muted" title={`+${extra} more`}>
-                                <AvatarFallback className="text-[10px]">+{extra}</AvatarFallback>
-                            </Avatar>
-                        )}
+                        {/*{top3.map((a) => (*/}
+                        {/*    <Avatar key={a.nik} className="h-6 w-6 ring-2 ring-background" title={a.name}>*/}
+                        {/*        <AvatarImage src="" alt={a.name} draggable={false} />*/}
+                        {/*        <AvatarFallback className="text-[10px] font-semibold">*/}
+                        {/*            {initials(a.name)}*/}
+                        {/*        </AvatarFallback>*/}
+                        {/*    </Avatar>*/}
+                        {/*))}*/}
+                        {/*{extra > 0 && (*/}
+                        {/*    <Avatar className="h-6 w-6 ring-2 ring-background bg-muted" title={`+${extra} more`}>*/}
+                        {/*        <AvatarFallback className="text-[10px]">+{extra}</AvatarFallback>*/}
+                        {/*    </Avatar>*/}
+                        {/*)}*/}
                     </div>
                 </div>
 

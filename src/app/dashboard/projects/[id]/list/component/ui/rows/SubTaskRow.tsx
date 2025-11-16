@@ -8,7 +8,7 @@ import React, {
     useCallback,
     type CSSProperties,
 } from 'react'
-import { TableRow, TableCell } from '@/components/ui/table'
+import {TableRow, TableCell} from '@/components/ui/table'
 import {
     DndContext,
     type DragEndEvent,
@@ -22,25 +22,34 @@ import {
     useSortable,
     arrayMove,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, CircleCheck } from 'lucide-react'
-import { useMoveSubTask, useUpdateSubTask } from '@/lib/project/projectAction'
-import { useDebouncedCallback } from '@/hooks/useDebouncedCallback'
-import type { SubTask } from '@/lib/project/projectTypes'
-import {cn, formatDateTime2, isOverdue } from '@/lib/utils'
+import {CSS} from '@dnd-kit/utilities'
+import {GripVertical, CircleCheck} from 'lucide-react'
+import {
+    useMoveSubTask,
+    useUpdateSubTask,
+    useSyncSubTaskAssigneesAction,
+} from '@/lib/project/projectAction'
+import {useDebouncedCallback} from '@/hooks/useDebouncedCallback'
+import type {SubTask} from '@/lib/project/projectTypes'
+import {cn, formatDateTime2, isOverdue} from '@/lib/utils'
+import {Assignees} from "@/app/dashboard/projects/[id]/list/types/task";
+import {useProjectPermission} from "@/hooks/useProjectPermission";
+import AssigneePicker from "@/app/dashboard/projects/[id]/list/component/AssigneePicker";
+
 
 type Props = {
-    projectId: string
-    taskId: string
-    subtasks: SubTask[]
+    projectId: string,
+    taskId: string,
+    membersTask: Assignees[],
+    subtasks: SubTask[],
 }
 
-export default function SubTaskRow({ projectId, taskId, subtasks }: Props) {
+export default function SubTaskRow({projectId, taskId, subtasks, membersTask}: Props) {
     const [localSubtasks, setLocalSubtasks] = useState(subtasks)
-    const { mutate: moveSubTask } = useMoveSubTask(projectId)
+    const {mutate: moveSubTask} = useMoveSubTask(projectId)
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 2 } }),
+        useSensor(PointerSensor, {activationConstraint: {distance: 2}}),
     )
 
     const prevSubtasksRef = useRef(subtasks)
@@ -52,16 +61,16 @@ export default function SubTaskRow({ projectId, taskId, subtasks }: Props) {
     }, [subtasks])
 
     const renameLocal = useCallback((id: string, name: string) => {
-        setLocalSubtasks(prev => prev.map(s => (s.id === id ? { ...s, name } : s)))
+        setLocalSubtasks(prev => prev.map(s => (s.id === id ? {...s, name} : s)))
     }, [])
 
     const toggleStatusLocal = useCallback((id: string, next: boolean) => {
-        setLocalSubtasks(prev => prev.map(s => (s.id === id ? { ...s, status: next } : s)))
+        setLocalSubtasks(prev => prev.map(s => (s.id === id ? {...s, status: next} : s)))
     }, [])
 
     const handleDragEnd = useCallback(
         (event: DragEndEvent) => {
-            const { active, over } = event
+            const {active, over} = event
             if (!active?.id || !over?.id || active.id === over.id) return
 
             setLocalSubtasks(prev => {
@@ -78,7 +87,7 @@ export default function SubTaskRow({ projectId, taskId, subtasks }: Props) {
                     newIdx < reordered.length - 1 ? reordered[newIdx + 1]?.id ?? null : null
 
                 moveSubTask(
-                    { taskId, subtaskId: String(active.id), payload: { beforeId, afterId } },
+                    {taskId, subtaskId: String(active.id), payload: {beforeId, afterId}},
                     {
                         onError: (err) => {
                             console.error('Move subtask failed:', err)
@@ -106,6 +115,7 @@ export default function SubTaskRow({ projectId, taskId, subtasks }: Props) {
                         subtask={sub}
                         onRename={renameLocal}
                         onToggleStatus={toggleStatusLocal}
+                        membersTask={membersTask}
                     />
                 ))}
             </SortableContext>
@@ -119,12 +129,14 @@ function SubTaskRowItem({
                             subtask,
                             onRename,
                             onToggleStatus,
+                            membersTask,
                         }: {
     projectId: string
     taskId: string
     subtask: SubTask
     onRename: (id: string, name: string) => void
     onToggleStatus: (id: string, next: boolean) => void
+    membersTask?: Assignees[]
 }) {
     const {
         setNodeRef,
@@ -134,10 +146,10 @@ function SubTaskRowItem({
         listeners,
         setActivatorNodeRef,
         isDragging,
-    } = useSortable({ id: subtask.id })
+    } = useSortable({id: subtask.id})
 
 
-    const { mutate: updateSubtask } = useUpdateSubTask(projectId)
+    const {mutate: updateSubtask} = useUpdateSubTask(projectId)
 
     const style: CSSProperties = useMemo(
         () => ({
@@ -151,13 +163,22 @@ function SubTaskRowItem({
     const [editing, setEditing] = useState(false)
     const [tempName, setTempName] = useState(subtask.name)
     const inputRef = useRef<HTMLInputElement>(null)
+    const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
+    const syncAssigneeMut = useSyncSubTaskAssigneesAction(projectId);
+    const [localAssignees, setLocalAssignees] = useState<Assignees[]>(subtask.assignees ?? []);
 
+    useEffect(() => {
+        setLocalAssignees(subtask.assignees ?? []);
+    }, [subtask.assignees]);
+    useEffect(() => {
+        setLocalAssignees(subtask.assignees ?? [])
+    }, [subtask.assignees])
     const debouncedSave = useDebouncedCallback(
         (taskIdArg: string, id: string, name: string) => {
             const n = name.trim()
             if (!n) return
             updateSubtask(
-                { taskId: taskIdArg, subtaskId: id, payload: { name: n } },
+                {taskId: taskIdArg, subtaskId: id, payload: {name: n}},
                 {
                     onError: (err) => {
                         console.error('Rename failed:', err)
@@ -203,7 +224,7 @@ function SubTaskRowItem({
         const next = !subtask.status
         onToggleStatus(subtask.id, next) // optimistic
         updateSubtask(
-            { taskId, subtaskId: subtask.id, payload: { status: next } },
+            {taskId, subtaskId: subtask.id, payload: {status: next}},
             {
                 onError: (err) => {
                     console.error('Toggle status failed:', err)
@@ -212,23 +233,48 @@ function SubTaskRowItem({
             },
         )
     }, [onToggleStatus, subtask.id, subtask.status, taskId, updateSubtask])
+    const handleAssigneesChange = useCallback(
+        (next: Assignees[]) => {
+            if (!hasAccess) return;
+
+            // ✅ update UI lokal dulu (biar berasa responsive)
+            setLocalAssignees(next);
+
+            // ✅ kirim ke backend: cuma butuh nik
+            const payload = next.map(a => ({ nik: a.nik.trim() }));
+
+            syncAssigneeMut.mutate({
+                taskId,
+                subtaskId: subtask.id,
+                assignees: payload,
+            });
+        },
+        [hasAccess, syncAssigneeMut, taskId, subtask.id],
+    );
+
 
     return (
         <TableRow
             ref={setNodeRef}
             style={style}
-            className="select-none h-10 border-b last:border-0 hover:bg-muted/40"
+            className={cn(
+                "select-none h-10 hover:bg-muted/40",
+                // garis horizontal
+                "border-b border-foreground/15 last:border-b-0",
+                // garis vertikal di setiap kolom kecuali yang terakhir
+                "[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-foreground/15"
+            )}
         >
             <TableCell colSpan={2} className="p-2 border-l border-border first:border-l-0">
                 <div className="h-full flex items-center gap-2 group/item">
                     <button
                         ref={setActivatorNodeRef}
-                        {...(!editing ? { ...attributes, ...listeners } : {})}
+                        {...(!editing ? {...attributes, ...listeners} : {})}
                         type="button"
                         aria-label="Drag subtask"
-                        style={{ touchAction: 'none' }}
+                        style={{touchAction: 'none'}}
                         className={cn(
-                            'shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-transparent',
+                            'shrink-0 rounded p-0.5 mr-10 text-muted-foreground hover:text-foreground hover:bg-transparent',
                             'cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
 
                             // hidden by default; show on row hover/focus
@@ -244,7 +290,7 @@ function SubTaskRowItem({
                         )}
                         disabled={editing}
                     >
-                        <GripVertical size={14} />
+                        <GripVertical size={14}/>
                     </button>
 
 
@@ -289,7 +335,7 @@ function SubTaskRowItem({
                     ) : (
                         <span
                             onClick={() => setEditing(true)}
-                            className={`text-sm font-semibold truncate cursor-text flex-1 ${subtask.status ? 'text-muted-foreground/80': 'text-primary'}`}
+                            className={`text-sm font-semibold truncate cursor-text flex-1 ${subtask.status ? 'text-muted-foreground/80' : 'text-primary'}`}
                             title={subtask.name}
                         >
               {subtask.name}
@@ -299,7 +345,13 @@ function SubTaskRowItem({
             </TableCell>
 
             <TableCell className="p-0 border-l border-border">
-                <div className="h-full py-1 px-2" />
+                <AssigneePicker
+                    hasAccess={hasAccess}
+                    currentMembers={localAssignees}
+                    members={membersTask ?? []}
+                    onChange={handleAssigneesChange}
+                    disabled={syncAssigneeMut.isPending}
+                />
             </TableCell>
 
             <TableCell className="text-xs font-semibold text-center item-center p-0 border-l border-border">
@@ -316,7 +368,7 @@ function SubTaskRowItem({
             </TableCell>
 
             <TableCell className="p-0 border-l border-border">
-                <div className="h-full py-1 px-2" />
+                <div className="h-full py-1 px-2"/>
             </TableCell>
         </TableRow>
     )
