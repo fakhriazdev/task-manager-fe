@@ -1,7 +1,6 @@
 'use client'
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Table } from '@/components/ui/table'
 import { TaskTableHead } from './TaskTableHead'
 import { SectionTBody, type SectionVM } from '@/app/dashboard/projects/[id]/list/component/ui/section/SectionTBody'
