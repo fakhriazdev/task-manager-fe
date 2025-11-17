@@ -208,7 +208,7 @@ export function SectionTBody({
         >
             {/* Section Header Row */}
                 <TableRow className="bg-transparent divide-x divide-foreground/40">
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={5}  className="py-1 px-2 h-auto" >
                         <div className="flex items-center justify-between">
                             {/* jadikan wrapper ini sebagai group */}
                             <div className="group/name flex items-center min-w-0 flex-1 gap-1">

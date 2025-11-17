@@ -140,20 +140,20 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                     ref={setNodeRef}
                     style={style}
                     className={cn(
-                        "transform-gpu select-none transition-colors duration-150",
+                        'h-auto transform-gpu select-none transition-colors duration-150',
                         isDragging
-                            ? "ring-2 ring-primary/30 bg-secondary/60"
-                            : "hover:bg-muted/40",
+                            ? 'ring-2 ring-primary/30 bg-secondary/60'
+                            : 'hover:bg-muted/40',
                         // garis vertikal antar kolom (semua td kecuali terakhir)
-                        "[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-foreground/15",
-                        // kalau mau garis horizontal row juga:
-                        "border-y border-foreground/15"
+                        '[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-foreground/15',
+                        // garis horizontal row
+                        'border-y border-foreground/15',
                     )}
                     aria-grabbed={isDragging || undefined}
                 >
                     {/* Col 1: Drag, expand, name+status, open detail */}
                     <TableCell colSpan={2}>
-                        <div className="h-full flex items-center gap-1 min-w-0 group/item"
+                        <div className="min-h-[1rem] flex items-center gap-1 min-w-0 group/item"
                              onClick={openDetail}
                         >
                             {/* Drag handle – tetap boleh */}
@@ -189,7 +189,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                                         e.stopPropagation()
                                         toggleExpanded()
                                     }}
-                                    className="w-6 h-6 rounded hover:bg-muted shrink-0"
+                                    className="w-6 h-6 rounded hover:bg-muted shrink-0 ml-1"
                                     type="button"
                                 >
                                     {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -197,7 +197,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                             )}
 
                             {/* Task name + status */}
-                            <div className={cn("flex-1 min-w-0", !hasSubtasks && "ml-7")}>
+                            <div className={cn("flex-1 min-w-0", !hasSubtasks && "ml-8")}>
                                 <TaskName
                                     name={tempName}
                                     lengthSubTask={task.subTask?.length ?? 0}

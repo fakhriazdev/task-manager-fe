@@ -9,6 +9,7 @@ import { TABLE_MIN_W } from '@/app/dashboard/projects/[id]/list/types/TaskTable.
 import AddSection from '@/app/dashboard/projects/[id]/list/component/ui/section/AddSection'
 import { Task } from '@/lib/project/projectTypes'
 import {useProjectPermission} from "@/hooks/useProjectPermission";
+import { cn } from '@/lib/utils'
 
 /* =========================
    Constants & Utils
@@ -141,8 +142,14 @@ export const TaskTableView = memo(function TaskTableView({
     const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
 
     const table = (
-            <div ref={rootRef} className={TABLE_MIN_W}>
-                <Table className="table-fixed">
+        <div
+            ref={rootRef}
+            className={cn(
+                "relative w-full overflow-x-auto", // ✅ horizontal scroll kalau butuh
+            )}
+        >
+            <div className={TABLE_MIN_W}>
+                <Table className="table-fixed w-full">
                     <TaskTableHead />
                     {showUnlocated && (
                         <UnlocatedTBody
@@ -153,13 +160,12 @@ export const TaskTableView = memo(function TaskTableView({
                         />
                     )}
                     {sectionRows}
-                    {hasAccess && (
-                        <AddSection projectId={projectId} colSpan={5} />
-                    )}
-
+                    {hasAccess && <AddSection projectId={projectId} colSpan={5} />}
                 </Table>
             </div>
+        </div>
     )
+
 
     return renderDnD ? <>{renderDnD(table)}</> : table
 })

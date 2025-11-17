@@ -297,7 +297,7 @@ function SubTaskRowItem({
                     <button
                         onClick={handleToggleStatus}
                         className={cn(
-                            'group flex items-center justify-center p-0.5 transition-colors rounded-full',
+                            'group flex items-center justify-center p-0.5 transition-colors rounded-full ml-2.5',
                             subtask.status
                                 ? 'bg-emerald-500 hover:bg-emerald-600 border-2 border-transparent'
                                 : 'bg-transparent hover:bg-emerald-500 border-2 border-emerald-600',

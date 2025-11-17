@@ -106,7 +106,7 @@ export default function TaskDetailDrawer({ open, onOpenChange, taskId, projectId
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-full md:max-w-[50vw] lg:max-w-[50vw] sm:w-full md:w-[50vw] lg:w-[50vw] bg-card [&>button[data-radix-dialog-close]]:hidden"
+                className="w-full md:max-w-[43vw] lg:max-w-[43vw] sm:w-full md:w-[43vw] lg:w-[43vw] bg-card [&>button[data-radix-dialog-close]]:hidden"
             >
                 <SheetHeader className="text-left border-b">
                     <SheetTitle className="flex items-center justify-between gap-3 text-lg font-medium">
