@@ -40,12 +40,6 @@ const isTaskContainerData = (x: unknown): x is DndTaskContainerData =>
     (x as { type?: unknown }).type === 'task-container' &&
     typeof (x as { sectionId?: unknown }).sectionId === 'string'
 
-/** Rebuild full tasks array after reordering a subset inside one section */
-function mergeReorderedSectionTasks(all: Task[], sectionId: string, reordered: Task[]) {
-    const others = all.filter((t) => t.section !== sectionId)
-    return [...others, ...reordered]
-}
-
 /** Return tasks of a section in their current order */
 function tasksOfSection(all: Task[], sectionId: string) {
     return all.filter((t) => t.section === sectionId)
@@ -55,38 +49,34 @@ function tasksOfSection(all: Task[], sectionId: string) {
    Component
    ========================= */
 export default function ListTab() {
-    // --- project id
     const { id } = useParams();
     const projectId = useMemo(() => (Array.isArray(id) ? id[0] : id) ?? "", [id]);
 
-    // --- API hooks
     const { data: taskList, isLoading, error } = useProjectTasksAction(projectId)
     const moveSectionMutation = useMoveSection(projectId ?? '')
     const moveTaskMutation = useMoveTask(projectId ?? '')
 
-    // --- DnD sensors - KEMBALI KE ORIGINAL SETTINGS
+    // 🎯 SAMA SEPERTI SUBTASK: activation distance kecil untuk responsiveness
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 6, // Kembali ke 6
+                distance: 3, // Lebih kecil = lebih responsive
             }
         }),
     )
 
-    // --- local state
     const [sections, setSections] = useState<Section[]>([])
     const [tasks, setTasks] = useState<Task[]>([])
     const [activeId, setActiveId] = useState<string | null>(null)
     const [activeType, setActiveType] = useState<'task' | 'section' | null>(null)
 
-    // Scroll container for drift-compensation
     const [viewportEl, setViewportEl] = useState<HTMLElement | null>(null)
 
-    // Snapshot for rollback when drop invalid
-    const dragSnapshotRef = useRef<{ tasks: Task[] | null; sections: Section[] | null }>({
-        tasks: null,
-        sections: null,
-    })
+    // 🎯 Snapshot untuk rollback - SIMPLIFIED
+    const snapshotRef = useRef<{
+        tasks: Task[]
+        sections: Section[]
+    }>({ tasks: [], sections: [] })
 
     /* =========================
        Hydrate from API
@@ -127,68 +117,65 @@ export default function ListTab() {
         setTasks(apiTasks)
     }, [taskList])
 
-    const resetDnD = useCallback(() => {
-        setActiveId(null)
-        setActiveType(null)
-        dragSnapshotRef.current = { tasks: null, sections: null }
-    }, [])
-
     /* =========================
-       DnD handlers
+       DnD handlers - SIMPLIFIED LIKE SUBTASK
        ========================= */
     const handleDragStart = useCallback(
         (event: DragStartEvent) => {
-            console.log('🚀 DRAG START:', event.active.id)
             const idStr = String(event.active.id)
+
             if (idStr.startsWith('section-')) {
                 setActiveType('section')
                 setActiveId(getSectionIdFromDom(idStr))
-                dragSnapshotRef.current.sections = sections
-                dragSnapshotRef.current.tasks = null
+                snapshotRef.current = { tasks, sections }
             } else {
                 setActiveType('task')
                 setActiveId(idStr)
-                dragSnapshotRef.current.tasks = tasks
-                dragSnapshotRef.current.sections = null
+                snapshotRef.current = { tasks, sections }
             }
         },
         [sections, tasks],
     )
 
+    // 🎯 SIMPLIFIED: Langsung arrayMove tanpa logic kompleks
     const handleDragOver = useCallback(
         (event: DragOverEvent) => {
             if (activeType !== 'task') return
 
             const { active, over } = event
-            if (!over) return
+            if (!over || !active) return
 
             const activeIdStr = String(active.id)
             const overIdStr = String(over.id)
 
-            // Skip when hovering container header itself
+            // Skip container headers
             if (isDroppableContainer(overIdStr)) return
 
             setTasks((current) => {
                 const activeTask = current.find((t) => t.id === activeIdStr)
                 const overTask = current.find((t) => t.id === overIdStr)
+
                 if (!activeTask || !overTask) return current
 
-                // Move across sections (preview)
+                // Cross-section move
                 if (activeTask.section !== overTask.section) {
                     return current.map((t) =>
-                        t.id === activeIdStr ? { ...t, section: overTask.section } : t,
+                        t.id === activeIdStr ? { ...t, section: overTask.section } : t
                     )
                 }
 
-                // Reorder inside same section
-                const sectionId = activeTask.section
-                const same = tasksOfSection(current, sectionId)
-                const from = same.findIndex((t) => t.id === activeIdStr)
-                const to = same.findIndex((t) => t.id === overIdStr)
-                if (from < 0 || to < 0 || from === to) return current
+                // Same section reorder - SIMPLE arrayMove
+                const sectionTasks = tasksOfSection(current, activeTask.section)
+                const activeIndex = sectionTasks.findIndex((t) => t.id === activeIdStr)
+                const overIndex = sectionTasks.findIndex((t) => t.id === overIdStr)
 
-                const reordered = arrayMove(same, from, to)
-                return mergeReorderedSectionTasks(current, sectionId, reordered)
+                if (activeIndex === -1 || overIndex === -1) return current
+
+                const reordered = arrayMove(sectionTasks, activeIndex, overIndex)
+
+                // Merge back
+                const otherTasks = current.filter((t) => t.section !== activeTask.section)
+                return [...otherTasks, ...reordered]
             })
         },
         [activeType],
@@ -196,19 +183,15 @@ export default function ListTab() {
 
     const handleDragEnd = useCallback(
         (event: DragEndEvent) => {
-            console.log('🏁 DRAG END:', event.active.id, 'over:', event.over?.id)
-
             const { active, over } = event
 
-            // Drop di area tidak valid: rollback
+            // No valid drop target: rollback
             if (!over) {
-                console.warn('⚠️ No valid drop target, rolling back')
-                if (activeType === 'task' && dragSnapshotRef.current.tasks) {
-                    setTasks(dragSnapshotRef.current.tasks)
-                } else if (activeType === 'section' && dragSnapshotRef.current.sections) {
-                    setSections(dragSnapshotRef.current.sections)
-                }
-                resetDnD()
+                console.warn('⚠️ Invalid drop, rolling back')
+                setTasks(snapshotRef.current.tasks)
+                setSections(snapshotRef.current.sections)
+                setActiveId(null)
+                setActiveType(null)
                 return
             }
 
@@ -218,8 +201,8 @@ export default function ListTab() {
             /* ----- Move SECTION ----- */
             if (activeType === 'section') {
                 const movedId = getSectionIdFromDom(activeIdStr)
-
                 let overSectionDomId: string | null = null
+
                 if (overIdStr.startsWith('section-')) {
                     overSectionDomId = overIdStr
                 } else {
@@ -229,31 +212,26 @@ export default function ListTab() {
                     }
                 }
 
-                if (!overSectionDomId) {
-                    resetDnD()
+                if (!overSectionDomId || movedId === getSectionIdFromDom(overSectionDomId)) {
+                    setActiveId(null)
+                    setActiveType(null)
                     return
                 }
 
                 const overSectionId = getSectionIdFromDom(overSectionDomId)
-                if (movedId === overSectionId) {
-                    resetDnD()
-                    return
-                }
 
                 setSections((prev) => {
                     const domIds = prev.map((s) => sectionDomId(s.id))
                     const fromIndex = domIds.indexOf(sectionDomId(movedId))
                     const toIndex = domIds.indexOf(sectionDomId(overSectionId))
-                    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return prev
 
-                    const newDomOrder = arrayMove(domIds, fromIndex, toIndex)
-                    const newIndex = newDomOrder.indexOf(sectionDomId(movedId))
-                    const leftDom = newDomOrder[newIndex - 1] ?? null
-                    const rightDom = newDomOrder[newIndex + 1] ?? null
-                    const afterId = leftDom ? getSectionIdFromDom(leftDom) : null
-                    const beforeId = rightDom ? getSectionIdFromDom(rightDom) : null
+                    if (fromIndex < 0 || toIndex < 0) return prev
 
-                    console.log('📤 Moving section:', movedId, { afterId, beforeId })
+                    const newOrder = arrayMove(prev, fromIndex, toIndex)
+                    const newIndex = newOrder.findIndex((s) => s.id === movedId)
+
+                    const afterId = newOrder[newIndex - 1]?.id ?? null
+                    const beforeId = newOrder[newIndex + 1]?.id ?? null
 
                     if (projectId) {
                         moveSectionMutation.mutate({
@@ -262,100 +240,93 @@ export default function ListTab() {
                         })
                     }
 
-                    return arrayMove(prev, fromIndex, toIndex)
+                    return newOrder
                 })
 
-                resetDnD()
+                setActiveId(null)
+                setActiveType(null)
                 return
             }
 
-            /* ----- Move TASK ----- */
+            /* ----- Move TASK - FIXED CALCULATION ----- */
             if (activeType === 'task') {
                 const movedTaskId = activeIdStr
 
                 setTasks((current) => {
-                    // Tentukan destinasi section DAN posisi yang tepat
-                    let destSectionId: string
-                    let targetTaskId: string | null = null
-
-                    if (isDroppableContainer(overIdStr)) {
-                        // Drop di container kosong / header section
-                        destSectionId = getSectionIdFromDroppable(overIdStr)
-                        targetTaskId = null
-                    } else {
-                        // Drop di atas task tertentu
-                        const overTask = current.find((t) => t.id === overIdStr)
-                        if (!overTask) return dragSnapshotRef.current.tasks ?? current
-                        destSectionId = overTask.section
-                        targetTaskId = overIdStr
-                    }
-
                     const movedTask = current.find((t) => t.id === movedTaskId)
                     if (!movedTask) return current
 
-                    // Hitung afterId & beforeId berdasarkan posisi AKTUAL di UI
-                    const destTasks = tasksOfSection(current, destSectionId)
-                    let afterId: string | null = null
-                    let beforeId: string | null = null
+                    // Determine target section
+                    let targetSectionId: string
 
-                    if (targetTaskId) {
-                        const targetIndex = destTasks.findIndex((t) => t.id === targetTaskId)
-
-                        if (targetIndex >= 0) {
-                            const taskBefore = destTasks[targetIndex - 1]
-                            const taskAtTarget = destTasks[targetIndex]
-
-                            if (movedTask.section === destSectionId) {
-                                const movedIndex = destTasks.findIndex((t) => t.id === movedTaskId)
-
-                                if (movedIndex < targetIndex) {
-                                    // Pindah ke bawah
-                                    afterId = taskAtTarget.id
-                                    beforeId = destTasks[targetIndex + 1]?.id ?? null
-                                } else {
-                                    // Pindah ke atas
-                                    afterId = taskBefore?.id ?? null
-                                    beforeId = taskAtTarget.id
-                                }
-                            } else {
-                                // Pindah dari section lain
-                                afterId = taskBefore?.id ?? null
-                                beforeId = taskAtTarget.id
-                            }
-                        }
+                    if (isDroppableContainer(overIdStr)) {
+                        targetSectionId = getSectionIdFromDroppable(overIdStr)
                     } else {
-                        // Drop di container kosong atau di akhir
-                        if (destTasks.length > 0) {
-                            const filteredTasks = destTasks.filter((t) => t.id !== movedTaskId)
-                            afterId = filteredTasks[filteredTasks.length - 1]?.id ?? null
-                        }
-                        beforeId = null
+                        const overTask = current.find((t) => t.id === overIdStr)
+                        if (!overTask) return current
+                        targetSectionId = overTask.section
                     }
 
-                    console.log('📤 Moving task:', movedTaskId, 'to section:', destSectionId, { afterId, beforeId })
+                    // 🔥 FIX: Get tasks AFTER reordering (current state sudah correct dari onDragOver)
+                    const sectionTasks = tasksOfSection(current, targetSectionId)
+                    const movedIndex = sectionTasks.findIndex((t) => t.id === movedTaskId)
+
+                    if (movedIndex === -1) {
+                        console.error('Task not found in section after reorder')
+                        return current
+                    }
+
+                    // 🎯 Calculate neighbors: task SEBELUM (afterId) dan SESUDAH (beforeId)
+                    // Backend logic: afterId = task di ATAS, beforeId = task di BAWAH
+                    let afterId: string | null = null   // task di atas
+                    let beforeId: string | null = null  // task di bawah
+
+                    if (movedIndex === 0) {
+                        // Task ada di paling atas
+                        afterId = null
+                        beforeId = sectionTasks[1]?.id ?? null
+                    } else if (movedIndex === sectionTasks.length - 1) {
+                        // Task ada di paling bawah
+                        afterId = sectionTasks[movedIndex - 1]?.id ?? null
+                        beforeId = null
+                    } else {
+                        // Task ada di tengah
+                        afterId = sectionTasks[movedIndex - 1]?.id ?? null
+                        beforeId = sectionTasks[movedIndex + 1]?.id ?? null
+                    }
+
+                    console.log('📤 Moving task:', {
+                        taskId: movedTaskId,
+                        section: targetSectionId,
+                        position: movedIndex,
+                        totalInSection: sectionTasks.length,
+                        afterId: afterId || 'null (paling atas)',
+                        beforeId: beforeId || 'null (paling bawah)',
+                    })
 
                     if (projectId) {
                         moveTaskMutation.mutate({
                             taskId: movedTaskId,
                             payload: {
-                                targetSectionId: destSectionId === UNLOCATED_ID ? null : destSectionId,
+                                targetSectionId: targetSectionId === UNLOCATED_ID ? null : targetSectionId,
                                 afterId,
                                 beforeId,
                             },
                         })
                     }
 
-                    // Return current state (sudah di-update oleh onDragOver)
                     return current
                 })
 
-                resetDnD()
+                setActiveId(null)
+                setActiveType(null)
                 return
             }
 
-            resetDnD()
+            setActiveId(null)
+            setActiveType(null)
         },
-        [activeType, moveSectionMutation, moveTaskMutation, projectId, resetDnD],
+        [activeType, moveSectionMutation, moveTaskMutation, projectId],
     )
 
     /* =========================
@@ -393,14 +364,6 @@ export default function ListTab() {
     const isDraggingTask = activeType === 'task'
 
     /* =========================
-       Debug Info
-       ========================= */
-    useEffect(() => {
-        console.log('📊 Tasks count:', tasks.length)
-        console.log('📊 Sections count:', sections.length)
-    }, [tasks.length, sections.length])
-
-    /* =========================
        UI states
        ========================= */
     if (isLoading) return <div className="p-4 text-sm text-muted-foreground">Loading tasks...</div>
@@ -427,7 +390,10 @@ export default function ListTab() {
                         onDragOver={handleDragOver}
                         onDragEnd={handleDragEnd}
                         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-                        autoScroll={false}
+                        autoScroll={{
+                            enabled: true,
+                            threshold: { x: 0.2, y: 0.2 },
+                        }}
                         modifiers={[adjustForScroll(() => viewportEl)]}
                     >
                         <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
