@@ -15,7 +15,7 @@ import {
     ChevronRight,
     ChevronDown,
     GripVertical,
-    ListTree, CircleCheck, Check,
+    ListTree, Check,
 } from 'lucide-react'
 import { initials } from '../../../types/TaskTable.const'
 import {useProjectDetailAction, useUpdateTask} from '@/lib/project/projectAction'
