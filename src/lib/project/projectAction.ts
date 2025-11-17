@@ -143,15 +143,30 @@ const insertAt = <T,>(arr: T[], idx: number, item: T): T[] => {
     return [...arr.slice(0, i), item, ...arr.slice(i)]
 }
 
-const computeInsertIndex = (ids: string[], beforeId?: string | null, afterId?: string | null): number => {
+const computeInsertIndex = (
+    ids: string[],
+    beforeId?: string | null,
+    afterId?: string | null
+): number => {
+    // ✅ Both neighbors → taruh di antara → pakai index after
+    if (beforeId && afterId) {
+        const idxAfter = ids.findIndex(x => x === afterId)
+        if (idxAfter !== -1) return idxAfter
+    }
+
+    // ✅ Only beforeId → taruh TEPAT di bawah before
     if (beforeId) {
-        const j = ids.findIndex((x) => x === beforeId)
-        if (j !== -1) return j
+        const idxBefore = ids.findIndex(x => x === beforeId)
+        if (idxBefore !== -1) return idxBefore + 1
     }
+
+    // ✅ Only afterId → taruh TEPAT di atas after
     if (afterId) {
-        const i = ids.findIndex((x) => x === afterId)
-        if (i !== -1) return i + 1
+        const idxAfter = ids.findIndex(x => x === afterId)
+        if (idxAfter !== -1) return idxAfter
     }
+
+    // ✅ Gak ada tetangga → append di bawah
     return ids.length
 }
 

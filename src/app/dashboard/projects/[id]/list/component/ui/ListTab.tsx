@@ -212,7 +212,7 @@ export default function ListTab() {
             if (activeType === 'section') {
                 const movedId = getSectionIdFromDom(activeIdStr)
 
-                // Tentukan “over section” baik ketika drop di header section atau di container task-nya
+                // Tentukan "over section" baik ketika drop di header section atau di container task-nya
                 let overSectionDomId: string | null = null
                 if (overIdStr.startsWith('section-')) {
                     overSectionDomId = overIdStr
@@ -263,24 +263,68 @@ export default function ListTab() {
                 const movedTaskId = activeIdStr
 
                 setTasks((current) => {
-                    // Tentukan destinasi section (drop di container vs drop di atas task lain)
+                    // 🔥 FIX: Tentukan destinasi section DAN posisi yang tepat
                     let destSectionId: string
+                    let targetTaskId: string | null = null
+
                     if (isDroppableContainer(overIdStr)) {
+                        // Drop di container kosong / header section
                         destSectionId = getSectionIdFromDroppable(overIdStr)
+                        targetTaskId = null // akan ditaruh di akhir
                     } else {
+                        // Drop di atas task tertentu
                         const overTask = current.find((t) => t.id === overIdStr)
                         if (!overTask) return dragSnapshotRef.current.tasks ?? current
                         destSectionId = overTask.section
+                        targetTaskId = overIdStr
                     }
 
                     const movedTask = current.find((t) => t.id === movedTaskId)
                     if (!movedTask) return current
 
-                    // Hitung tetangga untuk payload (sederhana: pasang setelah item terakhir di destinasi)
-                    const inDest = tasksOfSection(current, destSectionId).map((t) => t.id)
-                    const afterId = inDest.length > 0 ? inDest[inDest.length - 1] : null
-                    const beforeId = null
+                    // 🔥 FIX: Hitung afterId & beforeId berdasarkan posisi AKTUAL di UI
+                    const destTasks = tasksOfSection(current, destSectionId)
+                    let afterId: string | null = null
+                    let beforeId: string | null = null
 
+                    if (targetTaskId) {
+                        // Drop di atas task tertentu
+                        const targetIndex = destTasks.findIndex((t) => t.id === targetTaskId)
+
+                        if (targetIndex >= 0) {
+                            // Dapatkan task sebelum dan sesudah target
+                            const taskBefore = destTasks[targetIndex - 1]
+                            const taskAtTarget = destTasks[targetIndex]
+
+                            // Jika task yang dipindah ada di section yang sama
+                            if (movedTask.section === destSectionId) {
+                                const movedIndex = destTasks.findIndex((t) => t.id === movedTaskId)
+
+                                if (movedIndex < targetIndex) {
+                                    // Pindah ke bawah: taruh SETELAH target
+                                    afterId = taskAtTarget.id
+                                    beforeId = destTasks[targetIndex + 1]?.id ?? null
+                                } else {
+                                    // Pindah ke atas: taruh SEBELUM target
+                                    afterId = taskBefore?.id ?? null
+                                    beforeId = taskAtTarget.id
+                                }
+                            } else {
+                                // Pindah dari section lain: taruh SEBELUM target
+                                afterId = taskBefore?.id ?? null
+                                beforeId = taskAtTarget.id
+                            }
+                        }
+                    } else {
+                        // Drop di container kosong atau di akhir list
+                        if (destTasks.length > 0) {
+                            const filteredTasks = destTasks.filter((t) => t.id !== movedTaskId)
+                            afterId = filteredTasks[filteredTasks.length - 1]?.id ?? null
+                        }
+                        beforeId = null
+                    }
+
+                    // 🔥 Kirim ke API dengan posisi yang benar
                     if (projectId) {
                         moveTaskMutation.mutate({
                             taskId: movedTaskId,
@@ -292,11 +336,9 @@ export default function ListTab() {
                         })
                     }
 
-                    // Update lokal: pindahkan task ke destinasi (posisi akhir list)
-                    const next = current
-                        .map((t) => (t.id === movedTaskId ? { ...t, section: destSectionId } : t))
-
-                    return next
+                    // Update lokal: gunakan state dari onDragOver yang sudah benar
+                    // Karena onDragOver sudah handle reordering dengan benar
+                    return current
                 })
 
                 resetDnD()

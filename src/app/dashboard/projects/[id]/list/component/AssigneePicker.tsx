@@ -19,141 +19,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, UserRoundPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+    AvatarList,
+    initials,
+    getPastelClassesForItem,
+    normNik,
+    type AvatarListItem
+} from "@/components/ui/AvatarList";
 
 export type Assignee = { nik: string; nama: string };
 
 export type AssigneePickerNikNamaProps = {
-    currentMembers: Assignee[] | null; // assignee yg nempel di task/subtask ini
-    members: Assignee[] | null;        // daftar member project / task
+    currentMembers: Assignee[] | null;
+    members: Assignee[] | null;
     onChange: (next: Assignee[]) => void;
     className?: string;
     disabled?: boolean;
     hasAccess?: boolean;
 };
-
-// ===== Utils =====
-const normNik = (v: unknown) => String(v ?? "").trim();
-
-const initials = (n: string) => {
-    if (!n) return "?";
-    const p = n.trim().split(/\s+/);
-    return (
-        ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() ||
-        p[0]?.[0]?.toUpperCase() ||
-        "?"
-    );
-};
-
-// ✅ AvatarStack: pure visual, bisa interaktif atau read-only
-function AvatarStack({
-                         assignees,
-                         interactive = true,
-                     }: {
-    assignees?: Assignee[] | null;
-    interactive?: boolean;
-}) {
-    const list = assignees ?? [];
-    const top3 = list.slice(0, 3);
-    const extra = Math.max(list.length - 3, 0);
-
-    // Tidak ada assignee
-    if (list.length === 0) {
-        if (!interactive) {
-            // 🔒 Read-only & no access → tidak render apapun
-            return null;
-        }
-
-        // ✅ Interaktif: plus jadi trigger popover
-        return (
-            <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    aria-label="Tambah assignee"
-                    className="cursor-pointer disabled:cursor-not-allowed"
-                >
-                    <Avatar
-                        className="h-7 w-7 ring-2 ring-background bg-muted cursor-pointer"
-                        title="Tambah assignee"
-                    >
-                        <AvatarFallback className="p-0 pointer-events-none">
-                            <UserRoundPlus
-                                className="h-3.5 w-3.5 pointer-events-none"
-                                aria-hidden="true"
-                            />
-                        </AvatarFallback>
-                    </Avatar>
-                </button>
-            </PopoverTrigger>
-        );
-    }
-
-    // Ada assignee tapi non-interaktif → read-only avatars, tanpa plus
-    if (!interactive) {
-        return (
-            <div className="flex items-center -space-x-2">
-                {top3.map((a) => (
-                    <Avatar
-                        key={normNik(a.nik)}
-                        className="h-7 w-7 ring-2 ring-background"
-                        title={a.nama}
-                    >
-                        <AvatarFallback className="text-[10px] font-semibold">
-                            {initials(a?.nama ?? "")}
-                        </AvatarFallback>
-                    </Avatar>
-                ))}
-                {extra > 0 && (
-                    <Avatar
-                        className="h-7 w-7 ring-2 ring-background bg-muted"
-                        title={`+${extra} more`}
-                    >
-                        <AvatarFallback className="text-[10px]">+{extra}</AvatarFallback>
-                    </Avatar>
-                )}
-            </div>
-        );
-    }
-
-    // Ada assignee & interaktif → avatars + plus trigger + extra badge
-    return (
-        <div className="flex items-center -space-x-2">
-            {top3.map((a) => (
-                <Avatar
-                    key={normNik(a.nik)}
-                    className="h-7 w-7 ring-2 ring-background"
-                    title={a.nama}
-                >
-                    <AvatarFallback className="text-[10px] font-semibold">
-                        {initials(a?.nama ?? "")}
-                    </AvatarFallback>
-                </Avatar>
-            ))}
-
-            {/* PLUS avatar sebagai trigger popover */}
-            <PopoverTrigger asChild>
-                <button type="button" aria-label="Tambah assignee">
-                    <Avatar
-                        className="h-7 w-7 ring-2 ring-background bg-muted cursor-pointer disabled:cursor-not-allowed"
-                        title="Tambah assignee"
-                    >
-                        <AvatarFallback className="p-0">
-                            <UserRoundPlus className="h-3.5 w-3.5" aria-hidden="true" />
-                        </AvatarFallback>
-                    </Avatar>
-                </button>
-            </PopoverTrigger>
-
-            {extra > 0 && (
-                <Avatar
-                    className="h-7 w-7 ring-2 ring-background bg-muted"
-                    title={`+${extra} more`}
-                >
-                    <AvatarFallback className="text-[10px]">+{extra}</AvatarFallback>
-                </Avatar>
-            )}
-        </div>
-    );
-}
 
 const AssigneePicker = memo(function AssigneePickerNikNama({
                                                                currentMembers,
@@ -166,7 +49,6 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
     const [open, setOpen] = useState(false);
     const interactive = !!hasAccess && !disabled;
 
-    // 🔹 selected selalu dinormalisasi (nik & nama)
     const selected = useMemo(
         () =>
             (currentMembers ?? []).map((a) => ({
@@ -182,18 +64,15 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
     );
 
     const availableMembers = useMemo(
-        () =>
-            (members ?? []).filter((m) => !selectedSet.has(normNik(m.nik))),
+        () => (members ?? []).filter((m) => !selectedSet.has(normNik(m.nik))),
         [members, selectedSet],
     );
 
     const assignedMembers = useMemo(
-        () =>
-            (members ?? []).filter((m) => selectedSet.has(normNik(m.nik))),
+        () => (members ?? []).filter((m) => selectedSet.has(normNik(m.nik))),
         [members, selectedSet],
     );
 
-    // Map nama dari currentMembers (selected) buat jaga-jaga
     const currentNameMap = useMemo(
         () =>
             new Map(
@@ -214,16 +93,14 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
 
             let nextRaw: Assignee[];
             if (exists) {
-                // unassign
                 nextRaw = selected.filter((a) => normNik(a.nik) !== key);
             } else {
-                // assign
                 const nama =
-                    String(m.nama ?? currentNameMap.get(key) ?? "").trim() || "Unknown";
+                    String(m.nama ?? currentNameMap.get(key) ?? "").trim() ||
+                    "Unknown";
                 nextRaw = [...selected, { nik: key, nama }];
             }
 
-            // 🔐 GUARD: pastikan semua nik & nama sudah bersih sebelum dikirim keluar
             const next = nextRaw.map((a) => ({
                 nik: normNik(a.nik),
                 nama: String(a.nama ?? "").trim() || "Unknown",
@@ -234,12 +111,9 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
         [interactive, selected, selectedSet, currentNameMap, onChange],
     );
 
-    // 🧠 Kalau tidak interactive (hasAccess === false atau disabled)
+    // 🔒 Read-only mode
     if (!interactive) {
-        const count = selected.length;
-
-        if (count === 0) {
-            // no access + no assignee → no render
+        if (selected.length === 0) {
             return null;
         }
 
@@ -250,12 +124,30 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
                     className,
                 )}
             >
-                <AvatarStack assignees={selected} interactive={false} />
+                <AvatarList items={selected} maxVisible={3} size="md" />
             </div>
         );
     }
 
-    const avatarAssignees = selected;
+    // ✅ Interactive mode
+    const plusTrigger = (
+        <PopoverTrigger asChild>
+            <button
+                type="button"
+                aria-label="Tambah assignee"
+                className="cursor-pointer disabled:cursor-not-allowed"
+            >
+                <Avatar
+                    className="h-7 w-7 ring-2 ring-background"
+                    title="Tambah assignee"
+                >
+                    <AvatarFallback className="p-0 bg-muted">
+                        <UserRoundPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                    </AvatarFallback>
+                </Avatar>
+            </button>
+        </PopoverTrigger>
+    );
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -266,7 +158,18 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
                     className,
                 )}
             >
-                <AvatarStack assignees={avatarAssignees} interactive={true} />
+                {selected.length === 0 ? (
+                    // Hanya plus button
+                    plusTrigger
+                ) : (
+                    // Avatars + plus button
+                    <AvatarList
+                        items={selected}
+                        maxVisible={3}
+                        size="md"
+                        renderTrigger={plusTrigger}
+                    />
+                )}
             </div>
 
             <PopoverContent className="p-0 w-[320px]" align="start">
@@ -279,10 +182,11 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
                     </CommandEmpty>
 
                     <ScrollArea className="max-h-[300px]">
-                        {/* Members (EXCLUDE assigned) */}
+                        {/* Available Members */}
                         <CommandGroup heading="Members">
                             {availableMembers.map((m) => {
                                 const mid = normNik(m.nik);
+                                const pastel = getPastelClassesForItem(m as AvatarListItem);
                                 return (
                                     <CommandItem
                                         key={mid}
@@ -296,13 +200,20 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
                                                 onClick={(e) => e.stopPropagation()}
                                                 className="mr-1"
                                             />
-                                            <Avatar className="size-7">
-                                                <AvatarFallback>{initials(m.nama)}</AvatarFallback>
+                                            <Avatar className="size-7 border border-border ring-1 ring-background">
+                                                <AvatarFallback
+                                                    className={cn(
+                                                        "text-[11px] font-medium uppercase",
+                                                        pastel
+                                                    )}
+                                                >
+                                                    {initials(m.nama)}
+                                                </AvatarFallback>
                                             </Avatar>
                                             <div className="min-w-0 flex-1">
-                        <span className="truncate text-sm font-medium leading-none">
-                          {m.nama}
-                        </span>
+                                                <span className="truncate text-sm font-medium leading-none">
+                                                    {m.nama}
+                                                </span>
                                             </div>
                                         </div>
                                     </CommandItem>
@@ -310,11 +221,12 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
                             })}
                         </CommandGroup>
 
-                        {/* Assigned */}
+                        {/* Assigned Members */}
                         {assignedMembers.length > 0 && (
                             <CommandGroup heading="Assigned">
                                 {assignedMembers.map((m) => {
                                     const mid = normNik(m.nik);
+                                    const pastel = getPastelClassesForItem(m as AvatarListItem);
                                     return (
                                         <CommandItem
                                             key={mid}
@@ -328,13 +240,20 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
                                                     className="mr-1 pointer-events-none"
                                                     aria-hidden="true"
                                                 />
-                                                <Avatar className="size-7">
-                                                    <AvatarFallback>{initials(m.nama)}</AvatarFallback>
+                                                <Avatar className="size-7 border border-border ring-1 ring-background">
+                                                    <AvatarFallback
+                                                        className={cn(
+                                                            "text-[11px] font-medium uppercase",
+                                                            pastel
+                                                        )}
+                                                    >
+                                                        {initials(m.nama)}
+                                                    </AvatarFallback>
                                                 </Avatar>
                                                 <div className="min-w-0 flex-1">
-                          <span className="truncate text-sm font-medium leading-none">
-                            {m.nama}
-                          </span>
+                                                    <span className="truncate text-sm font-medium leading-none">
+                                                        {m.nama}
+                                                    </span>
                                                 </div>
                                                 <Check className="size-4 shrink-0" />
                                             </div>

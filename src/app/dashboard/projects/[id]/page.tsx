@@ -20,9 +20,9 @@ import {
     useProjectDetailAction,
     useProjectTasksAction,
 } from '@/lib/project/projectAction'
-import AvatarGroup, { AvatarGroupItem } from '@/components/shared/AvatarGroup'
 import InviteDialogDemo from '@/app/dashboard/projects/[id]/overview/components/DialogInvitation'
 import {useProjectPermission} from "@/hooks/useProjectPermission";
+import {AvatarList} from "@/components/ui/AvatarList";
 
 const TAB_KEYS = {
     OVERVIEW: 'overview',
@@ -74,15 +74,7 @@ export default function PageProjectDetail() {
 
                 <div className="flex gap-3 items-center text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
-                        <AvatarGroup max={7} size="md">
-                            {project?.members?.map((member, i) => (
-                                <AvatarGroupItem
-                                    key={i}
-                                    name={member.nama}
-                                    alt={member.nama}
-                                />
-                            ))}
-                        </AvatarGroup>
+                        <AvatarList items={project?.members} maxVisible={5} size="md" />
                     </div>
 
                     {/* Invite dialog hanya kalau user punya akses (OWNER/EDITOR) */}
