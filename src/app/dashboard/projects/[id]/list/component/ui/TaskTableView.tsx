@@ -141,7 +141,7 @@ export const TaskTableView = memo(function TaskTableView({
     const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
 
     const table = (
-            <div className={TABLE_MIN_W}>
+            <div ref={rootRef} className={TABLE_MIN_W}>
                 <Table className="table-fixed">
                     <TaskTableHead />
                     {showUnlocated && (

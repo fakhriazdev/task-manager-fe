@@ -61,9 +61,9 @@ export default function PageProjectDetail() {
         enabled: shouldFetchTasks,
     })
     return (
-        <div className="w-full px-4 lg:px-6 pt-4">
+        <div className="relative w-full px-4 lg:px-6 pt-4">
             {/* Header */}
-            <div className="flex justify-between mb-3">
+            <div className=" bg-white dark:bg-black py-3 sticky top-13 z-30 flex justify-between">
                 <div>
                     {loadingProject ? (
                         <div className="h-6 w-40 bg-muted animate-pulse rounded-md" />
@@ -103,10 +103,10 @@ export default function PageProjectDetail() {
             <Tabs
                 value={activeTab}
                 onValueChange={(val) => setActiveTab(val as TabKey)}
-                className="w-full flex-col justify-start gap-6"
+                className=" w-full flex-col justify-start gap-6"
             >
                 {/* View Selector */}
-                <div className="flex items-center justify-between">
+                <div className="bg-white dark:bg-black sticky py-3  top-25 z-30 flex items-center justify-between">
                     <Label htmlFor="view-selector" className="sr-only">
                         View
                     </Label>

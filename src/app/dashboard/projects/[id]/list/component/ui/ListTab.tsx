@@ -143,28 +143,45 @@ export default function ListTab() {
             if (activeType !== 'task') return
 
             const { active, over } = event
-            if (!over || !active) return
+            if (!over) return
 
             const activeIdStr = String(active.id)
             const overIdStr = String(over.id)
 
-            // Skip container headers
-            if (isDroppableContainer(overIdStr)) return
-
             setTasks((current) => {
                 const activeTask = current.find((t) => t.id === activeIdStr)
-                const overTask = current.find((t) => t.id === overIdStr)
+                if (!activeTask) return current
 
-                if (!activeTask || !overTask) return current
+                // 🟢 CASE 1: Drop di container section (bagian kosong)
+                if (isDroppableContainer(overIdStr)) {
+                    const targetSectionId = getSectionIdFromDroppable(overIdStr)
 
-                // Cross-section move
-                if (activeTask.section !== overTask.section) {
+                    // Kalau sudah di section itu, nggak perlu apa-apa
+                    if (activeTask.section === targetSectionId) return current
+
+                    // Pindahkan task ke section kosong (atau container section)
                     return current.map((t) =>
-                        t.id === activeIdStr ? { ...t, section: overTask.section } : t
+                        t.id === activeIdStr ? { ...t, section: targetSectionId } : t,
                     )
                 }
 
-                // Same section reorder - SIMPLE arrayMove
+                // 🟢 CASE 2: Drop di task lain (section yang sudah punya task)
+                const overTask = current.find((t) => t.id === overIdStr)
+                if (!overTask) return current
+
+                // Cross-section move (dari section A ke section B yang ada task-nya)
+                if (activeTask.section !== overTask.section) {
+                    // Pindahkan dulu ke section target (B)
+                    const updated = current.map((t) =>
+                        t.id === activeIdStr ? { ...t, section: overTask.section } : t,
+                    )
+
+                    // Opsional: kalau mau langsung urutin juga bisa dibuat lebih kompleks,
+                    // tapi untuk sekarang cukup pindah section, urutan diatur saat drag berikutnya.
+                    return updated
+                }
+
+                // 🟢 CASE 3: Reorder di section yang sama
                 const sectionTasks = tasksOfSection(current, activeTask.section)
                 const activeIndex = sectionTasks.findIndex((t) => t.id === activeIdStr)
                 const overIndex = sectionTasks.findIndex((t) => t.id === overIdStr)
@@ -173,13 +190,14 @@ export default function ListTab() {
 
                 const reordered = arrayMove(sectionTasks, activeIndex, overIndex)
 
-                // Merge back
+                // Merge back ke list global
                 const otherTasks = current.filter((t) => t.section !== activeTask.section)
                 return [...otherTasks, ...reordered]
             })
         },
         [activeType],
     )
+
 
     const handleDragEnd = useCallback(
         (event: DragEndEvent) => {
@@ -373,7 +391,7 @@ export default function ListTab() {
        Render
        ========================= */
     return (
-        <main className="min-h-screen bg-background text-foreground">
+        <main className="min-h-screen bg-background text-foreground pb-5">
             <TaskTableView
                 sections={sections}
                 grouped={grouped}
