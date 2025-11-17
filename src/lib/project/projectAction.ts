@@ -707,7 +707,7 @@ export function useMoveTask(projectId: string) {
             }
         },
 
-        onMutate: async ({ taskId, payload }) => {
+        onMutate: async () => {
             await qc.cancelQueries({ queryKey: key })
             const prev = qc.getQueryData<TaskList>(key)
 
