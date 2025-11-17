@@ -23,7 +23,7 @@ import {
     arrayMove,
 } from '@dnd-kit/sortable'
 import {CSS} from '@dnd-kit/utilities'
-import {GripVertical, CircleCheck} from 'lucide-react'
+import {GripVertical, Check} from 'lucide-react'
 import {
     useMoveSubTask,
     useUpdateSubTask,
@@ -296,24 +296,24 @@ function SubTaskRowItem({
 
                     <button
                         onClick={handleToggleStatus}
-                        className={`size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        className={cn(
+                            'group flex items-center justify-center p-0.5 transition-colors rounded-full',
                             subtask.status
-                                ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-600 hover:border-emerald-600'
-                                : ' border-dashed border-muted-foreground/60 hover:border-emerald-500 hover:bg-emerald-500/10'
-                        }`}
+                                ? 'bg-emerald-500 hover:bg-emerald-600 border-2 border-transparent'
+                                : 'bg-transparent hover:bg-emerald-500 border-2 border-emerald-600',
+                        )}
                         aria-pressed={!!subtask.status}
                         aria-label={subtask.status ? 'Tandai belum selesai' : 'Tandai selesai'}
                         type="button"
-                    >
-                        {subtask.status && <CircleCheck
+                    ><Check
                             className={cn(
-                                'w-4 h-4 text-black dark:text-white',
+                                'w-2.5 h-2.5 transition-colors',
                                 subtask.status
-                                    ? 'border-emerald-500 hover:border-emerald-600'
-                                    : 'border-dashed border-muted-foreground/60 hover:border-emerald-500 hover:text-emerald-600',
+                                    ? 'text-white'
+                                    : 'text-emerald-500 group-hover:text-white',
                             )}
                             aria-hidden
-                        />}
+                        />
                     </button>
 
                     {editing ? (

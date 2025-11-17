@@ -207,7 +207,7 @@ export function SectionTBody({
             )}
         >
             {/* Section Header Row */}
-                <TableRow className="bg-accent relative divide-x divide-foreground/40">
+                <TableRow className="bg-transparent relative divide-x divide-foreground/40">
                     <TableCell colSpan={5}>
                         <div className="flex items-center justify-between">
                             {/* jadikan wrapper ini sebagai group */}

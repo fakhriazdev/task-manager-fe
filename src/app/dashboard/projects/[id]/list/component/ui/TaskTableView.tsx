@@ -142,7 +142,7 @@ export const TaskTableView = memo(function TaskTableView({
     const { hasAccess } = useProjectPermission(projectId, ['OWNER', 'EDITOR',])
 
     const table = (
-        <ScrollArea ref={rootRef} className="w-full">
+        <ScrollArea ref={rootRef} className="w-full h-screen">
             <div className={TABLE_MIN_W}>
                 <Table className="table-fixed">
                     <TaskTableHead />

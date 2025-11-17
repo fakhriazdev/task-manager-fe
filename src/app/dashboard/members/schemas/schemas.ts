@@ -40,6 +40,7 @@ export const sharedUserSchemaFields = {
     accessStoreIds: z.array(accessStoresSchema).default([]),
     accessRegionIds: z.array(accessRegionSchema).default([]),
     statusActive: z.boolean(),
+    handleWeb: z.boolean().default(false),
 }
 
 export const UserSchema = z

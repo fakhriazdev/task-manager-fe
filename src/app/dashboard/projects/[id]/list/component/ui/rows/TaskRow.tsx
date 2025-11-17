@@ -14,9 +14,8 @@ import { CSS } from '@dnd-kit/utilities'
 import {
     ChevronRight,
     ChevronDown,
-    CircleCheck,
     GripVertical,
-    ListTree,
+    ListTree, CircleCheck, Check,
 } from 'lucide-react'
 import { initials } from '../../../types/TaskTable.const'
 import {useProjectDetailAction, useUpdateTask} from '@/lib/project/projectAction'
@@ -376,20 +375,19 @@ const TaskName = memo(function TaskName({
                         }}
                         aria-pressed={!!status}
                         aria-label={status ? 'Tandai belum selesai' : 'Tandai selesai'}
-                        className={[
-                            'size-5 rounded-full border-2 flex items-center justify-center shrink-0',
-                            'transition-colors',
+                        className={cn(
+                            'group flex items-center justify-center p-0.5 transition-colors rounded-full',
                             status
-                                ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-600 hover:border-emerald-600'
-                                : 'border-dashed border-muted-foreground/60 hover:border-emerald-500 hover:bg-emerald-500/10',
-                        ].join(' ')}
+                                ? 'bg-emerald-500 hover:bg-emerald-600 border-2 border-transparent'
+                                : 'bg-transparent hover:bg-emerald-500 border-2 border-emerald-600',
+                        )}
                     >
-                        <CircleCheck
+                        <Check
                             className={cn(
-                                'w-4 h-4 text-black dark:text-white',
+                                'w-2.5 h-2.5 transition-colors',
                                 status
-                                    ? 'border-emerald-500 hover:border-emerald-600'
-                                    : 'border-dashed border-muted-foreground/60 hover:border-emerald-500 hover:text-emerald-600',
+                                    ? 'text-white'
+                                    : 'text-emerald-500 group-hover:text-white',
                             )}
                             aria-hidden
                         />
