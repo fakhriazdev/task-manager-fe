@@ -152,8 +152,10 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                     aria-grabbed={isDragging || undefined}
                 >
                     {/* Col 1: Drag, expand, name+status, open detail */}
-                    <TableCell className="p-2" colSpan={2}>
-                        <div className="h-full flex items-center gap-1 min-w-0 group/item">
+                    <TableCell colSpan={2}>
+                        <div className="h-full flex items-center gap-1 min-w-0 group/item"
+                             onClick={openDetail}
+                        >
                             {/* Drag handle – tetap boleh */}
                             <button
                                 ref={setActivatorNodeRef}
@@ -444,7 +446,7 @@ const TaskName = memo(function TaskName({
                         }
                     }}
                     aria-label="Edit task name"
-                    className="w-full bg-secondary rounded text-sm outline-none px-2 py-1"
+                    className="w-full bg-secondary rounded text-sm outline-none px-2 py-0.5"
                 />
             )}
         </div>
