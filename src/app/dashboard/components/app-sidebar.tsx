@@ -96,6 +96,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )
         }
 
+        const canSeeMainItem = (itemId: string) => {
+            switch (roleId) {
+                case 'STAFF':
+                    // STAFF: sembunyikan ticket & members
+                    return !['ticket', 'members'].includes(itemId)
+                case 'ADMIN':
+                    // ADMIN: sembunyikan members saja
+                    return itemId !== 'members'
+                default:
+                    // SUPER / role lain: bebas
+                    return true
+            }
+        }
+
         const navGroups = [
             {
                 title: "Main",
@@ -103,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: IconDashboard, isArchive:false },
                     { id: "ticket",    title: "Ticket",    url: "/dashboard/ticket",   icon: IconTicket, isArchive:false },
                     { id: "members",   title: "Members",   url: "/dashboard/members",  icon: IconUsers,  isArchive:false },
-                ].filter(i => !(roleId === "ADMIN" && i.title === "Members")),
+                ].filter(i => canSeeMainItem(i.id)),
             },
             {
                 title: "Projects",

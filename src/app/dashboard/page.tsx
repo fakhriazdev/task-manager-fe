@@ -14,12 +14,25 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-// 🔧 ambil role dari auth store
 import { useAuthStore } from "@/lib/stores/useAuthStore";
 
 export default function Page() {
     const router = useRouter();
-    const roleId = useAuthStore((s) => s.user?.roleId); // 🔧
+    const roleId = useAuthStore((s) => s.user?.roleId);
+
+    // 🔹 Aturan visibilitas card
+    const canSeeCard = (cardId: "promosi" | "ticket" | "members") => {
+        switch (roleId) {
+            case "STAFF":
+                // STAFF: hide ticket & members
+                return false;
+            case "ADMIN":
+                // ADMIN: hide members saja
+                return cardId !== "members";
+            default:
+                return true;
+        }
+    };
 
     return (
         <div className="flex flex-1 flex-col">
@@ -27,52 +40,65 @@ export default function Page() {
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                     <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card *:data-[slot=card]:shadow-xs">
 
-                        <Card className="@container/card cursor-pointer" onClick={()=>router.push("/dashboard/promosi")}>
-                            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                                <CardTitle className='text-sm font-medium'>
-                                    <div className="flex items-center gap-2">
-                                        <IconRosetteDiscount size={"16"}/>Total Actives
-                                    </div>
-                                </CardTitle>
-                                <PillIndicator variant="warning" pulse />
-                            </CardHeader>
-                            <CardContent>
-                                <div className='text-2xl font-bold'>10</div>
-                                <p className='text-muted-foreground text-xs'>
-                                    3 Promosi expiring this week
-                                </p>
-                                <p className='text-muted-foreground text-xs'>
-                                    Out of 100 total Promosi
-                                </p>
-                            </CardContent>
-                        </Card>
+                        {/* 🔹 Card Promosi – selalu muncul (atau bisa pakai canSeeCard('promosi') kalau mau diatur juga) */}
+                        {canSeeCard("promosi") && (
+                            <Card
+                                className="@container/card cursor-pointer"
+                                onClick={() => router.push("/dashboard/promosi")}
+                            >
+                                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                                    <CardTitle className='text-sm font-medium'>
+                                        <div className="flex items-center gap-2">
+                                            <IconRosetteDiscount size={"16"} />Total Actives
+                                        </div>
+                                    </CardTitle>
+                                    <PillIndicator variant="warning" pulse />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className='text-2xl font-bold'>10</div>
+                                    <p className='text-muted-foreground text-xs'>
+                                        3 Promosi expiring this week
+                                    </p>
+                                    <p className='text-muted-foreground text-xs'>
+                                        Out of 100 total Promosi
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
 
-                        <Card className="@container/card cursor-pointer" onClick={()=>router.push("/dashboard/ticket")}>
-                            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                                <CardTitle className='text-sm font-medium'>
-                                    <div className="flex items-center gap-2">
-                                        <IconTicket size={"16"}/> Tickets
-                                    </div>
-                                </CardTitle>
-                                <PillIndicator variant="warning" pulse />
-                            </CardHeader>
-                            <CardContent>
-                                <div className='text-2xl font-bold'>5 High-priority</div>
-                                <p className='text-muted-foreground text-xs'>
-                                    Among 15 remaining tickets
-                                </p>
-                                <p className='text-muted-foreground text-xs'>
-                                    Out of 100 total tickets
-                                </p>
-                            </CardContent>
-                        </Card>
-                        {/* 🔧 Sembunyikan kartu Members jika roleId === "ADMIN" */}
-                        {roleId !== "ADMIN" && (
+                        {/* 🔹 Card Ticket – hide untuk STAFF */}
+                        {canSeeCard("ticket") && (
+                            <Card
+                                className="@container/card cursor-pointer"
+                                onClick={() => router.push("/dashboard/ticket")}
+                            >
+                                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                                    <CardTitle className='text-sm font-medium'>
+                                        <div className="flex items-center gap-2">
+                                            <IconTicket size={"16"} /> Tickets
+                                        </div>
+                                    </CardTitle>
+                                    <PillIndicator variant="warning" pulse />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className='text-2xl font-bold'>5 High-priority</div>
+                                    <p className='text-muted-foreground text-xs'>
+                                        Among 15 remaining tickets
+                                    </p>
+                                    <p className='text-muted-foreground text-xs'>
+                                        Out of 100 total tickets
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* 🔹 Card Members – hide untuk ADMIN & STAFF */}
+                        {canSeeCard("members") && (
                             <Card className="@container/card">
                                 <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                                     <CardTitle className='text-sm font-medium'>
                                         <div className="flex items-center gap-2">
-                                            <IconUsers size={"16"}/> Members
+                                            <IconUsers size={"16"} /> Members
                                         </div>
                                     </CardTitle>
                                     <Link
