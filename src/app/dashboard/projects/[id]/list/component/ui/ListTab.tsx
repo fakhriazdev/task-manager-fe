@@ -64,9 +64,13 @@ export default function ListTab() {
     const moveSectionMutation = useMoveSection(projectId ?? '')
     const moveTaskMutation = useMoveTask(projectId ?? '')
 
-    // --- DnD sensors
+    // --- DnD sensors - KEMBALI KE ORIGINAL SETTINGS
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 6, // Kembali ke 6
+            }
+        }),
     )
 
     // --- local state
@@ -134,6 +138,7 @@ export default function ListTab() {
        ========================= */
     const handleDragStart = useCallback(
         (event: DragStartEvent) => {
+            console.log('🚀 DRAG START:', event.active.id)
             const idStr = String(event.active.id)
             if (idStr.startsWith('section-')) {
                 setActiveType('section')
@@ -150,7 +155,6 @@ export default function ListTab() {
         [sections, tasks],
     )
 
-    // Live preview reorder while dragging a task
     const handleDragOver = useCallback(
         (event: DragOverEvent) => {
             if (activeType !== 'task') return
@@ -161,7 +165,7 @@ export default function ListTab() {
             const activeIdStr = String(active.id)
             const overIdStr = String(over.id)
 
-            // Skip when hovering container header itself (no specific target item)
+            // Skip when hovering container header itself
             if (isDroppableContainer(overIdStr)) return
 
             setTasks((current) => {
@@ -192,10 +196,13 @@ export default function ListTab() {
 
     const handleDragEnd = useCallback(
         (event: DragEndEvent) => {
+            console.log('🏁 DRAG END:', event.active.id, 'over:', event.over?.id)
+
             const { active, over } = event
 
             // Drop di area tidak valid: rollback
             if (!over) {
+                console.warn('⚠️ No valid drop target, rolling back')
                 if (activeType === 'task' && dragSnapshotRef.current.tasks) {
                     setTasks(dragSnapshotRef.current.tasks)
                 } else if (activeType === 'section' && dragSnapshotRef.current.sections) {
@@ -212,7 +219,6 @@ export default function ListTab() {
             if (activeType === 'section') {
                 const movedId = getSectionIdFromDom(activeIdStr)
 
-                // Tentukan "over section" baik ketika drop di header section atau di container task-nya
                 let overSectionDomId: string | null = null
                 if (overIdStr.startsWith('section-')) {
                     overSectionDomId = overIdStr
@@ -247,8 +253,13 @@ export default function ListTab() {
                     const afterId = leftDom ? getSectionIdFromDom(leftDom) : null
                     const beforeId = rightDom ? getSectionIdFromDom(rightDom) : null
 
+                    console.log('📤 Moving section:', movedId, { afterId, beforeId })
+
                     if (projectId) {
-                        moveSectionMutation.mutate({ sectionId: movedId, payload: { beforeId, afterId } })
+                        moveSectionMutation.mutate({
+                            sectionId: movedId,
+                            payload: { beforeId, afterId }
+                        })
                     }
 
                     return arrayMove(prev, fromIndex, toIndex)
@@ -263,14 +274,14 @@ export default function ListTab() {
                 const movedTaskId = activeIdStr
 
                 setTasks((current) => {
-                    // 🔥 FIX: Tentukan destinasi section DAN posisi yang tepat
+                    // Tentukan destinasi section DAN posisi yang tepat
                     let destSectionId: string
                     let targetTaskId: string | null = null
 
                     if (isDroppableContainer(overIdStr)) {
                         // Drop di container kosong / header section
                         destSectionId = getSectionIdFromDroppable(overIdStr)
-                        targetTaskId = null // akan ditaruh di akhir
+                        targetTaskId = null
                     } else {
                         // Drop di atas task tertentu
                         const overTask = current.find((t) => t.id === overIdStr)
@@ -282,41 +293,38 @@ export default function ListTab() {
                     const movedTask = current.find((t) => t.id === movedTaskId)
                     if (!movedTask) return current
 
-                    // 🔥 FIX: Hitung afterId & beforeId berdasarkan posisi AKTUAL di UI
+                    // Hitung afterId & beforeId berdasarkan posisi AKTUAL di UI
                     const destTasks = tasksOfSection(current, destSectionId)
                     let afterId: string | null = null
                     let beforeId: string | null = null
 
                     if (targetTaskId) {
-                        // Drop di atas task tertentu
                         const targetIndex = destTasks.findIndex((t) => t.id === targetTaskId)
 
                         if (targetIndex >= 0) {
-                            // Dapatkan task sebelum dan sesudah target
                             const taskBefore = destTasks[targetIndex - 1]
                             const taskAtTarget = destTasks[targetIndex]
 
-                            // Jika task yang dipindah ada di section yang sama
                             if (movedTask.section === destSectionId) {
                                 const movedIndex = destTasks.findIndex((t) => t.id === movedTaskId)
 
                                 if (movedIndex < targetIndex) {
-                                    // Pindah ke bawah: taruh SETELAH target
+                                    // Pindah ke bawah
                                     afterId = taskAtTarget.id
                                     beforeId = destTasks[targetIndex + 1]?.id ?? null
                                 } else {
-                                    // Pindah ke atas: taruh SEBELUM target
+                                    // Pindah ke atas
                                     afterId = taskBefore?.id ?? null
                                     beforeId = taskAtTarget.id
                                 }
                             } else {
-                                // Pindah dari section lain: taruh SEBELUM target
+                                // Pindah dari section lain
                                 afterId = taskBefore?.id ?? null
                                 beforeId = taskAtTarget.id
                             }
                         }
                     } else {
-                        // Drop di container kosong atau di akhir list
+                        // Drop di container kosong atau di akhir
                         if (destTasks.length > 0) {
                             const filteredTasks = destTasks.filter((t) => t.id !== movedTaskId)
                             afterId = filteredTasks[filteredTasks.length - 1]?.id ?? null
@@ -324,7 +332,8 @@ export default function ListTab() {
                         beforeId = null
                     }
 
-                    // 🔥 Kirim ke API dengan posisi yang benar
+                    console.log('📤 Moving task:', movedTaskId, 'to section:', destSectionId, { afterId, beforeId })
+
                     if (projectId) {
                         moveTaskMutation.mutate({
                             taskId: movedTaskId,
@@ -336,14 +345,15 @@ export default function ListTab() {
                         })
                     }
 
-                    // Update lokal: gunakan state dari onDragOver yang sudah benar
-                    // Karena onDragOver sudah handle reordering dengan benar
+                    // Return current state (sudah di-update oleh onDragOver)
                     return current
                 })
 
                 resetDnD()
                 return
             }
+
+            resetDnD()
         },
         [activeType, moveSectionMutation, moveTaskMutation, projectId, resetDnD],
     )
@@ -381,6 +391,14 @@ export default function ListTab() {
     )
 
     const isDraggingTask = activeType === 'task'
+
+    /* =========================
+       Debug Info
+       ========================= */
+    useEffect(() => {
+        console.log('📊 Tasks count:', tasks.length)
+        console.log('📊 Sections count:', sections.length)
+    }, [tasks.length, sections.length])
 
     /* =========================
        UI states
@@ -424,7 +442,10 @@ export default function ListTab() {
                                     creator={activeTask.creator}
                                 />
                             ) : activeType === 'section' && activeSection ? (
-                                <SectionGhost title={activeSection.name} count={(grouped[activeSection.id]?.length ?? 0)} />
+                                <SectionGhost
+                                    title={activeSection.name}
+                                    count={(grouped[activeSection.id]?.length ?? 0)}
+                                />
                             ) : null}
                         </DragOverlay>
                     </DndContext>

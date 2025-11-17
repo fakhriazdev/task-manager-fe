@@ -699,6 +699,7 @@ export function useMoveTask(projectId: string) {
 
         mutationFn: async ({ taskId, payload }) => {
             try {
+                console.log('📤 API Call: moveTask', { taskId, payload })
                 return await ProjectService.moveTask(projectId, taskId, payload)
             } catch (error) {
                 handleError(error)
@@ -710,86 +711,16 @@ export function useMoveTask(projectId: string) {
             await qc.cancelQueries({ queryKey: key })
             const prev = qc.getQueryData<TaskList>(key)
 
-            if (!prev) return { prev }
+            // ✅ JANGAN MODIFIKASI STATE DI SINI
+            // Biarkan onDragOver di ListTab yang handle reordering
+            console.log('💾 useMoveTask.onMutate: Saving snapshot only')
 
-            const next: TaskList = {
-                unlocated: [...(prev.unlocated ?? [])],
-                sections: (prev.sections ?? []).map(s => ({
-                    ...s,
-                    tasks: [...(s.tasks ?? [])]
-                })),
-            }
-
-            let moving: Task | null = null
-            let originSectionId: string | null = null
-
-            const idxU = next.unlocated.findIndex(t => t.id === taskId)
-            if (idxU !== -1) {
-                moving = next.unlocated[idxU]
-                next.unlocated.splice(idxU, 1)
-                originSectionId = null
-            }
-
-            if (!moving) {
-                for (const s of next.sections) {
-                    const i = s.tasks.findIndex(t => t.id === taskId)
-                    if (i !== -1) {
-                        moving = s.tasks[i]
-                        s.tasks.splice(i, 1)
-                        originSectionId = s.id
-                        break
-                    }
-                }
-            }
-
-            if (!moving) {
-                console.warn('Task not found for move:', taskId)
-                return { prev }
-            }
-
-            const {
-                targetSectionId,
-                beforeId: rawBeforeId = null,
-                afterId: rawAfterId = null
-            } = payload
-
-            const beforeId = rawBeforeId === taskId ? null : rawBeforeId
-            const afterId = rawAfterId === taskId ? null : rawAfterId
-
-            const insertWithOrder = (list: Task[]) => {
-                const ids = list.map(t => t.id)
-                const ins = computeInsertIndex(ids, beforeId, afterId)
-                return insertAt(list, ins, moving as Task)
-            }
-
-            const isInPlace =
-                targetSectionId !== null &&
-                originSectionId !== null &&
-                targetSectionId === originSectionId
-
-            if (targetSectionId === null) {
-                next.unlocated = insertWithOrder(next.unlocated)
-            } else if (isInPlace) {
-                const sec = next.sections.find(s => s.id === originSectionId)
-                if (sec) {
-                    sec.tasks = insertWithOrder(sec.tasks)
-                } else {
-                    next.unlocated = insertWithOrder(next.unlocated)
-                }
-            } else {
-                const target = next.sections.find(s => s.id === targetSectionId)
-                if (target) {
-                    target.tasks = insertWithOrder(target.tasks)
-                } else {
-                    next.unlocated = insertWithOrder(next.unlocated)
-                }
-            }
-
-            qc.setQueryData<TaskList>(key, next)
             return { prev }
         },
 
         onError: (error, vars, ctx) => {
+            console.error('❌ useMoveTask failed, rolling back')
+
             if (ctx?.prev) {
                 qc.setQueryData<TaskList>(key, ctx.prev)
             }
@@ -803,7 +734,12 @@ export function useMoveTask(projectId: string) {
             }
         },
 
+        onSuccess: (response) => {
+            console.log('✅ useMoveTask success:', response.data)
+        },
+
         onSettled: () => {
+            console.log('🔄 Invalidating tasks cache')
             qc.invalidateQueries({ queryKey: key })
         },
 
