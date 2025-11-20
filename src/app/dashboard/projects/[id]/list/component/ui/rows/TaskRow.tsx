@@ -397,7 +397,7 @@ const TaskName = memo(function TaskName({
                     {/* nama + badge subtask */}
                     <button
                         type="button"
-                        className={`font-semibold flex-1 min-w-0 text-left inline-flex items-center gap-1 px-1 -mx-1 py-0.5 rounded cursor-text ${
+                        className={`font-light flex-1 min-w-0 text-left inline-flex items-center gap-1 px-1 -mx-1 py-0.5 rounded cursor-text ${
                             status ? 'text-muted-foreground/80' : 'text-primary'
                         }`}
                         title={name}
@@ -413,7 +413,7 @@ const TaskName = memo(function TaskName({
                         }}
                         aria-label={`Task: ${name}${status ? ' (selesai)' : ''}`}
                     >
-                        <span className="truncate">{name}</span>
+                        <span className={`${status ? 'text-muted-foreground/80':'font-medium text-muted-foreground'}`}>{name}</span>
                         {lengthSubTask > 0 && (
                             <span
                                 className="shrink-0 inline-flex items-center gap-1 rounded bg-muted px-1 py-0.5

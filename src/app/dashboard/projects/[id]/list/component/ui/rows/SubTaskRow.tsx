@@ -335,10 +335,10 @@ function SubTaskRowItem({
                     ) : (
                         <span
                             onClick={() => setEditing(true)}
-                            className={`text-sm font-semibold truncate cursor-text flex-1 ${subtask.status ? 'text-muted-foreground/80' : 'text-primary'}`}
+                            className={`text-sm truncate cursor-text flex-1 ${subtask.status ? 'text-muted-foreground/80' : 'text-primary'}`}
                             title={subtask.name}
                         >
-              {subtask.name}
+  <span className={`${subtask.status ? 'text-muted-foreground/80':'font-medium text-muted-foreground'}`}>{subtask.name}</span>
             </span>
                     )}
                 </div>

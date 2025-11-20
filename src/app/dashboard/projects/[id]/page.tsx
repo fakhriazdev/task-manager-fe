@@ -63,7 +63,7 @@ export default function PageProjectDetail() {
     return (
         <div className="relative w-full px-4 lg:px-6 pt-4">
             {/* Header */}
-            <div className=" bg-white dark:bg-black py-3 sticky top-13 z-30 flex justify-between">
+            <div className=" bg-background py-3 sticky top-13 z-30 flex justify-between">
                 <div>
                     {loadingProject ? (
                         <div className="h-6 w-40 bg-muted animate-pulse rounded-md" />
@@ -106,7 +106,7 @@ export default function PageProjectDetail() {
                 className=" w-full flex-col justify-start gap-6"
             >
                 {/* View Selector */}
-                <div className="bg-white dark:bg-black sticky py-3  top-25 z-30 flex items-center justify-between">
+                <div className="bg-background sticky py-3  top-25 z-30 flex items-center justify-between">
                     <Label htmlFor="view-selector" className="sr-only">
                         View
                     </Label>

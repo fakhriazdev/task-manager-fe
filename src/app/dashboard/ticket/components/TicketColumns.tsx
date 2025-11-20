@@ -80,7 +80,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
             header: () => <div className="min-w-24">Store ID</div>,
             enableColumnFilter: true,
             cell: ({row}) => (
-                <div className="text-start text-primary text-sm">
+                <div className="text-start text-muted-foreground font-medium text-sm">
                     {row.original.idStore}
                 </div>
             ),
@@ -105,7 +105,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
             sortingFn: dateSortingFn,
             enableSorting: true,
             cell: ({row}) => (
-                <div className="text-start text-primary text-sm">
+                <div className="text-start text-muted-foreground font-medium  text-sm">
                     {formatDateTime(row.original.createdAt)}
                 </div>
             ),
@@ -123,7 +123,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
                         href={`https://wa.me/${waNumber}?text=${encodedMessage}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-start text-primary text-sm underline"
+                        className="text-start text-muted-foreground font-medium  text-sm underline"
                     >
                         {noTelp}
                     </Link>
@@ -134,7 +134,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
             accessorKey: "category",
             header: () => <div className="min-w-28">Category</div>,
             cell: ({row}) => (
-                <div className="text-start text-primary text-sm">
+                <div className="text-start text-muted-foreground font-medium text-sm">
                     {row.original.category}
                 </div>
             ),
@@ -149,7 +149,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
                 const isReadonly:boolean = !enableHandler || row.original.status === "COMPLETED";
                 if (isReadonly) {
                     return (
-                        <div className="text-primary font-semibold text-sm">
+                        <div className="text-muted-foreground font-medium text-sm">
                             {row.original.handler?.nama ?? "-"}
                         </div>
                     );
@@ -167,7 +167,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
             accessorKey: "idtv",
             header: () => <div className="min-w-28">ID Team Viewer</div>,
             cell: ({ row }) => (
-                <div className="text-primary font-semibold text-sm">
+                <div className="text-muted-foreground font-medium text-sm">
                     {row.original.idtv ?? "-"}
                 </div>
             ),
@@ -179,7 +179,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
             accessorKey: "completedBy",
             header: () => <div className="min-w-32">Completed By</div>,
             cell: ({row}) => (
-                <div className="text-primary font-semibold text-sm">
+                <div className="text-muted-foreground font-medium text-sm">
                     {row.original.completedBy?.nama ?? "-"}
                 </div>
             ),
@@ -190,7 +190,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
             cell: ({row}) => {
                 const completedAt = row.original?.completedAt
                 return (
-                    <Badge variant="outline" className="text-primary font-semibold text-xs">
+                    <Badge variant="outline" className="text-muted-foreground font-medium text-xs">
                         {completedAt ? formatDateTime(completedAt) : "-"}
                     </Badge>
                 )
@@ -260,7 +260,7 @@ export function ticketColumns({ enableHandler }: { enableHandler: boolean }): Co
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                <span className="text-primary font-semibold text-xs cursor-default line-clamp-1">
+                <span className="text-muted-foreground font-medium text-xs cursor-default line-clamp-1">
                   {reason}
                 </span>
                             </TooltipTrigger>

@@ -4,7 +4,7 @@ import { TableHeader, TableRow, TableHead } from "@/components/ui/table";
 
 export function TaskTableHead() {
     return (
-        <TableHeader className="sticky top-0 z-20 bg-accent border-y border-foreground/15">
+        <TableHeader className="sticky top-0 z-20 bg-card border-y border-foreground/15">
             <TableRow className="divide-x divide-foreground/15">
                 <TableHead
                     colSpan={2}
