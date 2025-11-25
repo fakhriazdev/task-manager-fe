@@ -1,25 +1,35 @@
 "use client";
 
-import { TableHeader, TableRow, TableHead } from "@/components/ui/table";
+import {
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/project/table-project";
 
 export function TaskTableHead() {
     return (
-        <TableHeader className="sticky top-0 z-20 bg-card border-y border-foreground/15">
-            <TableRow className="divide-x divide-foreground/15">
+        <TableHeader>
+            <TableRow className="bg-card">
+                {/* Nama - colspan 2 (45% total) */}
                 <TableHead
                     colSpan={2}
-                    className="py-2 px-3 text-center font-semibold"
+                    className="py-2 px-3 text-start font-medium tracking-wide"
                 >
                     Nama
                 </TableHead>
-                <TableHead className="py-2 px-3 text-center font-semibold">
+
+                {/* Assignee (18%) */}
+                <TableHead
+                    className="py-2 px-3 text-start font-medium tracking-wide"
+                >
                     Assignee
                 </TableHead>
-                <TableHead className="py-2 px-3 text-center font-semibold">
+
+                {/* Tenggat (18%) */}
+                <TableHead
+                    className="py-2 px-3 text-start font-medium tracking-wide"
+                >
                     Tenggat
-                </TableHead>
-                <TableHead className="py-2 px-3 text-center font-semibold">
-                    Creator
                 </TableHead>
             </TableRow>
         </TableHeader>

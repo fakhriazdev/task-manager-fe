@@ -124,7 +124,7 @@ const AssigneePicker = memo(function AssigneePickerNikNama({
                     className,
                 )}
             >
-                <AvatarList items={selected} maxVisible={3} size="md" />
+                <AvatarList items={selected} maxVisible={3} size="sm" />
             </div>
         );
     }

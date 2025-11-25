@@ -8,7 +8,7 @@ import React, {
     useCallback,
     type CSSProperties,
 } from 'react'
-import {TableRow, TableCell} from '@/components/ui/table'
+import {TableRow, TableCell} from '@/components/ui/project/table-project'
 import {
     DndContext,
     type DragEndEvent,
@@ -258,15 +258,15 @@ function SubTaskRowItem({
             ref={setNodeRef}
             style={style}
             className={cn(
-                "select-none h-10 hover:bg-muted/40",
+                "select-none hover:bg-muted/40",
                 // garis horizontal
-                "border-b border-foreground/15 last:border-b-0",
+                "border-b border-muted-foreground/15 last:border-b-0",
                 // garis vertikal di setiap kolom kecuali yang terakhir
-                "[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-foreground/15"
+                "[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-muted-foreground/15"
             )}
         >
-            <TableCell colSpan={2} className="p-2 border-l border-border first:border-l-0">
-                <div className="h-full flex items-center gap-2 group/item">
+            <TableCell colSpan={2} className="border-l border-border first:border-l-0">
+                <div className="flex items-center gap-2 group/item">
                     <button
                         ref={setActivatorNodeRef}
                         {...(!editing ? {...attributes, ...listeners} : {})}
@@ -274,7 +274,7 @@ function SubTaskRowItem({
                         aria-label="Drag subtask"
                         style={{touchAction: 'none'}}
                         className={cn(
-                            'shrink-0 rounded p-0.5 mr-10 text-muted-foreground hover:text-foreground hover:bg-transparent',
+                            'shrink-0 rounded mr-10 text-muted-foreground hover:text-foreground hover:bg-transparent',
                             'cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
 
                             // hidden by default; show on row hover/focus
@@ -330,7 +330,7 @@ function SubTaskRowItem({
                                     setEditing(false)
                                 }
                             }}
-                            className="bg-secondary rounded px-2 py-1 text-sm flex-1 focus:ring-2 focus:ring-primary/40"
+                            className="w-fit bg-transparent focus:ring-none rounded text-sm outline-none border-2 border-primary"
                         />
                     ) : (
                         <span
@@ -338,13 +338,13 @@ function SubTaskRowItem({
                             className={`text-sm truncate cursor-text flex-1 ${subtask.status ? 'text-muted-foreground/80' : 'text-primary'}`}
                             title={subtask.name}
                         >
-  <span className={`${subtask.status ? 'text-muted-foreground/80':'font-medium text-muted-foreground'}`}>{subtask.name}</span>
+  <span className={`font-medium tracking-wide ${subtask.status ? 'text-muted-foreground/60':'text-primary'}`}>{subtask.name}</span>
             </span>
                     )}
                 </div>
             </TableCell>
 
-            <TableCell className="p-0 border-l border-border">
+            <TableCell className="border-l border-border">
                 <AssigneePicker
                     hasAccess={hasAccess}
                     currentMembers={localAssignees}
@@ -354,8 +354,8 @@ function SubTaskRowItem({
                 />
             </TableCell>
 
-            <TableCell className="text-xs font-semibold text-center item-center p-0 border-l border-border">
-                {subtask?.dueDate ? (
+            <TableCell className="text-xs font-semibold text-center item-center border-l border-border">
+                {subtask?.dueDate && (
                     <p
                         className={cn(
                             'text-xs',
@@ -364,11 +364,7 @@ function SubTaskRowItem({
                     >
                         {formatDateTime2(subtask.dueDate)}
                     </p>
-                ) : '-'}
-            </TableCell>
-
-            <TableCell className="p-0 border-l border-border">
-                <div className="h-full py-1 px-2"/>
+                )}
             </TableCell>
         </TableRow>
     )

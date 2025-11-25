@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { TableBody, TableRow, TableCell } from '@/components/ui/table';
+import { TableBody, TableRow, TableCell } from '@/components/ui/project/table-project';
 import { useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -38,7 +38,7 @@ const SectionName = memo(({
     inputRef: React.RefObject<HTMLInputElement | null>;
 }) => {
     return (
-        <div className="relative py-2">
+        <div className="relative py-1">
             {!editing && (
                 <button
                     type="button"
@@ -50,10 +50,10 @@ const SectionName = memo(({
                         }
                     }}
                     title={name}
-                    className="inline-flex max-w-full items-center rounded px-1 py-auto text-left font-semibold text-sm
+                    className="inline-flex max-w-full items-center rounded px-1 py-auto text-left font-medium text-sm
                      hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
-                    <span className="truncate">{name}</span>
+                    <span className="truncate tracking-wide text-[16px]">{name}</span>
                 </button>
             )}
 
@@ -69,8 +69,8 @@ const SectionName = memo(({
                         if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
                     }}
                     aria-label="Edit section name"
-                    className="w-40 h-full rounded bg-secondary text-sm px-2 py-1
-                     focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-40 h-full bg-transparent border-primary border-2 rounded text-sm px-2 py-1
+                     focus:outline-none focus:ring-0"
                 />
             )}
         </div>
@@ -208,7 +208,7 @@ export function SectionTBody({
         >
             {/* Section Header Row */}
                 <TableRow className="bg-transparent divide-x divide-foreground/40">
-                    <TableCell colSpan={5}  className="py-1 px-2 h-auto" >
+                    <TableCell colSpan={4}>
                         <div className="flex items-center justify-between">
                             {/* jadikan wrapper ini sebagai group */}
                             <div className="group/name flex items-center min-w-0 flex-1 gap-1">
@@ -349,7 +349,7 @@ export function SectionTBody({
                     ))}
                     {hasAccess && (
                         <AddTaskRow
-                            colSpan={5}
+                            colSpan={4}
                             sectionId={section.id}
                             disabled={!!isDraggingTask}
                         />

@@ -29,7 +29,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
 
     return (
         <div className="w-full mt-6 px-4 lg:px-6">
-            <div className="bg-secondary dark:bg-secondary w-full rounded-lg px-4 py-4">
+            <div className="bg-background w-full rounded-lg px-4 py-4">
                 <Accordion type="multiple" className="w-full" defaultValue={['item-1', 'item-2']}>
                     {/* ===== Description ===== */}
                     <AccordionItem value="item-1">

@@ -111,16 +111,16 @@ function SidebarMenuLink({
                 <Link href={item.url || "#"} className="flex items-center gap-2">
                     {item.color && (
                         <span
-                            className="inline-block size-3 rounded-full"
+                            className="inline-block size-3 rounded-md"
                             style={{ backgroundColor: item.color }}
                         />
                     )}
                     {item.icon && (
-                        <item.icon className="size-4 text-black dark:text-white " />
+                        <item.icon className={`size-20`} />
                     )}
-                    <span>{item.title}</span>
+                    <span className="tracking-wide">{item.title}</span>
                     {item.badge && (
-                        <Badge className="rounded-full px-1 py-0 text-xs">
+                        <Badge className="rounded-md px-1 py-0 text-xs">
                             {item.badge}
                         </Badge>
                     )}
@@ -153,7 +153,7 @@ function SidebarMenuCollapsible({
                             {item.icon && (
                                 <item.icon className="size-4 text-black dark:text-white" />
                             )}
-                            <span className="flex gap-2 items-center py-auto">
+                            <span className="flex gap-2 items-center py-auto tracking-wide">
                 {item.title}
               </span>
                             <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -203,14 +203,14 @@ function SidebarMenuCollapsible({
                                         asChild
                                         isActive={active}
                                         className={cn(
-                                            "group/sub w-full rounded-md px-2.5 py-1.5",
-                                            "flex items-center justify-between gap-2",
+                                            "group/sub w-full px-2.5 py-1.5",
+                                            "flex items-center rounded-md justify-between gap-2",
                                             "bg-transparent",
-                                            active ? "bg-muted" : "hover:bg-muted/70",
+                                            active ? "bg-muted" : "hover:bg-muted",
                                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                                         )}
                                     >
-                                        <div className="flex w-full items-center justify-between gap-2">
+                                        <div className="flex w-full items-center content-center text-center justify-between gap-2">
                                             <Link
                                                 href={sub.url || "#"}
                                                 aria-current={active ? "page" : undefined}
@@ -218,7 +218,7 @@ function SidebarMenuCollapsible({
                                             >
                                                 {sub.color && (
                                                     <span
-                                                        className="mr-2 inline-block size-2.5 rounded-full ring-1 ring-black/5"
+                                                        className="mr-2 inline-block size-4 rounded-md"
                                                         style={{ backgroundColor: sub.color }}
                                                     />
                                                 )}
@@ -276,7 +276,7 @@ function SidebarMenuCollapsedDropdown({
                     className="min-w-[220px] w-[260px] rounded-md border bg-popover text-popover-foreground shadow-md"
                 >
                     <DropdownMenuLabel className="flex items-center justify-between gap-2 px-2">
-                        <span className="truncate">{item.title}</span>
+                        <span className="truncate tracking-wide">{item.title}</span>
 
                         {onAdd && (
                             <button
@@ -323,7 +323,7 @@ function SidebarMenuCollapsedDropdown({
                                 >
                                     {sub.color && (
                                         <span
-                                            className="inline-block size-3 rounded-full"
+                                            className="inline-block size-4 rounded-md"
                                             style={{ backgroundColor: sub.color }}
                                         />
                                     )}

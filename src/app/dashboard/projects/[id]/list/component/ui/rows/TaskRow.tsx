@@ -7,8 +7,7 @@ import React, {
     useRef,
     useState,
 } from 'react'
-import { TableRow, TableCell } from '@/components/ui/table'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { TableRow, TableCell } from '@/components/ui/project/table-project'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -17,7 +16,6 @@ import {
     GripVertical,
     ListTree, Check,
 } from 'lucide-react'
-import { initials } from '../../../types/TaskTable.const'
 import {useProjectDetailAction, useUpdateTask} from '@/lib/project/projectAction'
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback'
 import { useProjectStore } from '@/lib/stores/useProjectStore'
@@ -145,9 +143,9 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                             ? 'ring-2 ring-primary/30 bg-secondary/60'
                             : 'hover:bg-muted/40',
                         // garis vertikal antar kolom (semua td kecuali terakhir)
-                        '[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-foreground/15',
+                        '[&>td:not(:last-child)]:border-r [&>td:not(:last-child)]:border-muted-foreground/15',
                         // garis horizontal row
-                        'border-y border-foreground/15',
+                        'border-y border-muted-foreground/15',
                     )}
                     aria-grabbed={isDragging || undefined}
                 >
@@ -189,7 +187,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                                         e.stopPropagation()
                                         toggleExpanded()
                                     }}
-                                    className="w-6 h-6 rounded hover:bg-muted shrink-0 ml-1"
+                                    className="w-6 h-6 rounded hover:bg-muted shrink-0 mr-1"
                                     type="button"
                                 >
                                     {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -252,7 +250,7 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
 
 
                     {/* Col 2: Assignees */}
-                    <TableCell className="py-2 px-2 align-middle">
+                    <TableCell className="-ml-8 py-1 align-middle">
                         <AssigneePicker
                             hasAccess={hasAccess}
                             currentMembers={task.assignees}
@@ -279,20 +277,6 @@ export const TaskRow = memo(function TaskRow({ task, projectId, disableDrag }: T
                         </div>
                     </TableCell>
 
-                    {/* Col 4: Creator */}
-                    <TableCell className="py-2 pl-2 align-middle">
-                        {task.creator?.nama && (
-                            <Avatar
-                                className="h-7 w-7 ring-2 ring-background"
-                                title={`Creator ${task.creator.nama}`}
-                            >
-                                <AvatarImage src="" alt={task.creator.nama} draggable={false} />
-                                <AvatarFallback className="text-[10px] font-semibold">
-                                    {initials(task.creator.nama)}
-                                </AvatarFallback>
-                            </Avatar>
-                        )}
-                    </TableCell>
                 </TableRow>
 
                 {expanded && (
@@ -413,7 +397,7 @@ const TaskName = memo(function TaskName({
                         }}
                         aria-label={`Task: ${name}${status ? ' (selesai)' : ''}`}
                     >
-                        <span className={`${status ? 'text-muted-foreground/80':'font-medium text-muted-foreground'}`}>{name}</span>
+                        <span className={`tracking-wide font-normal text-sm ${status ? 'text-muted-foreground/60':''}`}>{name}</span>
                         {lengthSubTask > 0 && (
                             <span
                                 className="shrink-0 inline-flex items-center gap-1 rounded bg-muted px-1 py-0.5
@@ -446,7 +430,7 @@ const TaskName = memo(function TaskName({
                         }
                     }}
                     aria-label="Edit task name"
-                    className="w-full bg-secondary rounded text-sm outline-none px-2 py-0.5"
+                    className="w-fit bg-transparent focus:ring-none rounded text-sm outline-none border-2 border-primary"
                 />
             )}
         </div>

@@ -67,7 +67,7 @@ export interface ProjectDetail {
 }
 
 //section & TaskItem
-type Assignees = {
+export type Assignees = {
     nik: string;
     nama: string;
 };
@@ -170,7 +170,6 @@ export type ProjectMemberResponse = {
     nik: string;
     nama: string;
 };
-
 
 
 

@@ -21,7 +21,7 @@ export default function AddSection({colSpan = 4, disabled,}: Props) {
                 <TableCell colSpan={colSpan} className="p-0">
                     <button
                         type="button"
-                        className="pl-8 text-left px-4 py-3 hover:bg-muted/40 transition flex items-center gap-2 disabled:opacity-50"
+                        className="pl-2 text-muted-foreground/80 text-left px-4 py-2 hover:bg-muted/40 transition flex items-center gap-2 disabled:opacity-50"
                         disabled={!!disabled}
                         aria-label="Tambahkan bagan"
                         onClick={() => {

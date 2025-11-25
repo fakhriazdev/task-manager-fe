@@ -114,8 +114,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
     }, [debouncedRename]);
 
     // Worker async untuk commit
-    const commitNameAsync = useCallback(
-        async () => {
+    const commitNameAsync = useCallback(async () => {
             const trimmed = value.trim();
 
             // batalkan debounce yang masih antri
@@ -159,8 +158,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
         [addSubtask, debouncedRename, setItems, taskId, updateSubtask, value]
     );
 
-    const toggleAsync = useCallback(
-        async () => {
+    const toggleAsync = useCallback(async () => {
             const newStatus = !itemStatusRef.current;
 
             // optimistic drawer
@@ -181,8 +179,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
         [setItems, updateSubtask, taskId]
     );
 
-    const removeAsync = useCallback(
-        async () => {
+    const removeAsync = useCallback(async () => {
             // optimistic
             setItems((prev) => prev.filter((it) => it.id !== itemIdRef.current));
             if (!itemIsNewRef.current) {
@@ -201,8 +198,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
         [deleteSubtask, setItems, taskId]
     );
 
-    const clearDateAsync = useCallback(
-        async (e?: React.MouseEvent) => {
+    const clearDateAsync = useCallback(async (e?: React.MouseEvent) => {
             e?.stopPropagation();
             setDueDate(undefined);
             setItems((prev) => prev.map((it) => (it.id === itemIdRef.current ? { ...it, dueDate: null } : it)));
@@ -223,8 +219,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
         [setItems, updateSubtask, taskId]
     );
 
-    const onKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
-        (e) => {
+    const onKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback((e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
                 void commitNameAsync();
@@ -237,16 +232,14 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
         [commitNameAsync, debouncedRename]
     );
 
-    const style: CSSProperties = useMemo(
-        () => ({
+    const style: CSSProperties = useMemo(() => ({
             transform: CSS.Transform.toString(transform),
             transition,
             opacity: isDragging || isSorting ? 0.7 : 1,
         }),
         [transform, transition, isDragging, isSorting]
     );
-    const handleAssigneesChange = useCallback(
-        (next: Assignees[]) => {
+    const handleAssigneesChange = useCallback((next: Assignees[]) => {
             if (!hasAccess) return;
 
             // update UI lokal
@@ -281,7 +274,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
             ref={setNodeRef}
             style={style}
             className={cn(
-                "flex items-center gap-1.5 group py-1.5 px-2 bg-card border-y border-border transition-all duration-200 ease-in-out",
+                "flex items-center gap-1.5 group px-2 py-1 bg-card border-y border-border transition-all duration-200 ease-in-out",
                 "hover:bg-accent/50",
                 (isDragging || isSorting) && "ring-2 ring-primary/30"
             )}
@@ -338,7 +331,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
                         }}
                         onKeyDown={onKeyDown}
                         placeholder="Nama subtugas..."
-                        className="w-60 ml-1 p-0 text-sm bg-transparent border-b outline-none border-transparent focus:border-primary/40 transition-all"
+                        className="w-40 h-full ml-1 p-0 text-sm bg-transparent border-b outline-none border-transparent focus:border-primary/40 transition-all"
                         aria-label="Ubah nama subtugas"
                     />
                 ) : hasAccess ? (
@@ -353,7 +346,7 @@ export default function SortableSubtaskRow({memberTask,projectId, item, handlers
                             }
                         }}
                         className={cn(
-                            "w-60 font-semibold text-primary flex-1 text-left text-sm truncate px-1 cursor-text rounded-sm transition-all hover:bg-accent/30",
+                            "w-60 font-medium tracking-wide text-primary flex-1 text-left text-sm truncate px-1 cursor-text rounded-sm transition-all hover:bg-accent/30",
                             item.status && "text-muted-foreground",
                         )}
                         title={item.name}
