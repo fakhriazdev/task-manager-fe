@@ -24,7 +24,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { ListFilter } from 'lucide-react'
+import {CalendarDays, CircleCheck, ListFilter, User } from 'lucide-react'
 import {useFilteredTable, type DueFilterMode,} from '@/app/dashboard/projects/[id]/list/component/FilteredTable'
 import { useAuthStore } from '@/lib/stores/useAuthStore'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select'
@@ -295,7 +295,7 @@ export default function TaskTableView({ projectId }: TaskTableViewProps) {
                                             : 'bg-muted text-muted-foreground'
                                     }`}
                                 >
-                                    Tugas yang belum selesai
+                                    <CircleCheck /> Tugas yang belum selesai
                                 </DropdownMenuItem>
 
                                 {/* Tugas yang selesai */}
@@ -310,7 +310,7 @@ export default function TaskTableView({ projectId }: TaskTableViewProps) {
                                             : 'bg-muted text-muted-foreground'
                                     }`}
                                 >
-                                    Tugas yang selesai
+                                    <CircleCheck />Tugas yang selesai
                                 </DropdownMenuItem>
 
                                 {/* Hanya tugas saya */}
@@ -325,7 +325,7 @@ export default function TaskTableView({ projectId }: TaskTableViewProps) {
                                             : 'bg-muted text-muted-foreground'
                                     }`}
                                 >
-                                    Hanya tugas saya
+                                    <User /> Hanya tugas saya
                                 </DropdownMenuItem>
 
                                 {/* Masuk tenggat + dropdown mode */}
@@ -344,7 +344,7 @@ export default function TaskTableView({ projectId }: TaskTableViewProps) {
                                                 : 'bg-muted text-muted-foreground'
                                         }`}
                                     >
-                                        Masuk tenggat
+                                        <CalendarDays /> Masuk tenggat
                                     </DropdownMenuItem>
 
                                     <Select value={due} onValueChange={handleDueChange}>

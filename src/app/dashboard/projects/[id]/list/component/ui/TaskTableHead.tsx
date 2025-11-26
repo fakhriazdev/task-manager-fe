@@ -1,10 +1,6 @@
 "use client";
 
-import {
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/project/table-project";
+import {TableHead, TableHeader, TableRow,} from "@/components/ui/project/table-project";
 
 export function TaskTableHead() {
     return (
@@ -22,7 +18,7 @@ export function TaskTableHead() {
                 <TableHead
                     className="py-2 px-3 text-start font-medium tracking-wide"
                 >
-                    Assignee
+                    Assigned To
                 </TableHead>
 
                 {/* Tenggat (18%) */}

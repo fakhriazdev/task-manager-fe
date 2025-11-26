@@ -29,8 +29,8 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
             className={cn(
                 "sticky top-43.5 z-30",
                 "bg-background",
-                // ✅ Border atas untuk seluruh header
                 "before:content-[''] before:absolute before:left-0 before:right-0 before:top-0 before:h-px before:bg-muted-foreground/20",
+                "after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-1.5 after:h-2 after:bg-gradient-to-b after:from-muted after:to-transparent after:pointer-events-none",
                 className
             )}
             {...props}
@@ -85,7 +85,6 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
                 "last:border-x-0",
                 "text-foreground h-10 px-2 text-left align-middle font-normal text-sm whitespace-nowrap",
                 "[&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-                // ✅ Pastikan border tidak hilang saat sticky dengan outline sebagai backup
                 "relative",
                 className
             )}
