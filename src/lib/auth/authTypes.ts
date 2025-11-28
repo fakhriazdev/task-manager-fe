@@ -7,6 +7,8 @@ export interface UserInfo {
 }
 export interface MemberProjects {
     projectId: string;
+    name:string;
+    color:string;
     roleProject: string;
 }
 
@@ -22,5 +24,4 @@ export interface CommonResponse <T>{
     message: string;
     statusCode: number;
     data?: T;
-
 }

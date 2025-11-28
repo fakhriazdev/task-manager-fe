@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
     const isAuth = Boolean(token && !isTokenExpired(token));
 
     const pathname = request.nextUrl.pathname.replace(/\/$/, '');
+    const isApi = pathname.startsWith('/api/');
 
     const PUBLIC_PATHS: RegExp[] = [
         /^\/login$/,
@@ -18,27 +19,40 @@ export function middleware(request: NextRequest) {
 
     const isPublicPath = (path: string) => PUBLIC_PATHS.some((r) => r.test(path));
 
-    // Guard login
+    // =====================
+    // GUARD UNAUTH (API vs PAGE)
+    // =====================
     if (!isAuth && !isPublicPath(pathname)) {
+        // 🔹 Kalau request ke API tapi belum auth → balikin JSON 401
+        if (isApi) {
+            return new NextResponse(
+                JSON.stringify({ message: 'Unauthenticated' }),
+                { status: 401, headers: { 'content-type': 'application/json' } },
+            );
+        }
+
+        // 🔹 Kalau request ke page biasa → redirect ke /login
         return NextResponse.redirect(new URL('/login', request.url));
     }
+
+    // Kalau sudah login dan akses /login → lempar ke /dashboard
     if (isAuth && pathname === '/login') {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     // =====================
-    // ROLE-BASED GUARD TEMPLATE
+    // ROLE-BASED GUARD
     // =====================
     if (isAuth && token) {
         const roleId = getRoleIdFromToken(token);
 
-        // Mapping role → blokir path apa saja
         const ROLE_GUARDS: Record<string, RegExp[]> = {
             ADMIN: [
                 /^\/dashboard\/members(\/.*)?$/,
                 /^\/api\/members(\/.*)?$/,
             ],
             CASHIER: [],
+            STAFF: [],
             SPV: [],
             SPVJ: [],
             AC: [],
@@ -47,17 +61,20 @@ export function middleware(request: NextRequest) {
         };
 
         const blockedPaths = ROLE_GUARDS[roleId as keyof typeof ROLE_GUARDS] || [];
-        if (blockedPaths.some((r) => r.test(pathname))) {
-            if (pathname.startsWith('/api/')) {
+        const isBlocked = blockedPaths.some((r) => r.test(pathname));
+
+        if (isBlocked) {
+            // 🔹 API → balikin JSON 403
+            if (isApi) {
                 return new NextResponse(
                     JSON.stringify({ message: 'Forbidden by role guard' }),
-                    { status: 403, headers: { 'content-type': 'application/json' } }
+                    { status: 403, headers: { 'content-type': 'application/json' } },
                 );
             }
 
+            // 🔹 Page → redirect ke /unauthorized
             return NextResponse.redirect(new URL('/unauthorized', request.url));
         }
-
     }
 
     return NextResponse.next();
@@ -66,6 +83,7 @@ export function middleware(request: NextRequest) {
 export const config = {
     matcher: ['/((?!_next|static|favicon.ico).*)'],
 };
+
 
 // ===== Utils =====
 function isTokenExpired(token: string): boolean {

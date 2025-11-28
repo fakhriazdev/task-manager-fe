@@ -43,12 +43,12 @@ function TabsTrigger({
             data-slot="tabs-trigger"
             className={cn(
                 // STATE: active
-                "data-[state=active]:border-b-3 data-[state=active]:border-primary data-[state=active]:text-foreground",
+                "data-[state=active]:border-b-[3px] data-[state=active]:border-primary data-[state=active]:text-primary",
                 // BASE
                 "inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center text-start gap-1.5",
-                "border-b-3 border-transparent",
+                "border-b-[3px] border-transparent",
                 "py-3 text-sm font-medium whitespace-nowrap",
-                "text-foreground dark:text-muted-foreground",
+                "text-muted-foreground", // <- base abu2, bukan text-foreground
                 // TRANSITION: lebih smooth
                 "transition-[color,border-color,border-width,background-color,transform] duration-200 ease-out",
                 "focus-visible:outline-1 focus-visible:outline-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
@@ -58,6 +58,7 @@ function TabsTrigger({
             )}
             {...props}
         />
+
 
 
     )

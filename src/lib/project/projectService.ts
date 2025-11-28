@@ -3,7 +3,7 @@ import {
     AddSubTaskRequest, Attachment,
     CommonResponse, CreateProjectPayload, CreateTaskProjectRequest, DeleteSectionRequest, MemberRequest,
     MoveSectionPayload, MoveSubTaskPayload,
-    MoveTaskPayload,
+    MoveTaskPayload, OwnTaskList,
     Project,
     ProjectDetail, ProjectMemberResponse, Section,
     Task,
@@ -46,6 +46,7 @@ const ProjectService = {
         }
         return data;
     },
+
     deleteProjectById: async (idProject:string): Promise<CommonResponse<string>> => {
         const {data} = await axiosInstance.delete(`${baseURL}/${idProject}/delete`);
         if(data.statusCode !== 201 && data.statusCode !== 200){
@@ -55,10 +56,7 @@ const ProjectService = {
     },
 
     //memberManagement
-    syncMemberProject: async (
-        idProject: string,
-        members: MemberRequest[],
-    ): Promise<CommonResponse<ProjectMemberResponse[]>> => {
+    syncMemberProject: async (idProject: string, members: MemberRequest[],): Promise<CommonResponse<ProjectMemberResponse[]>> => {
         const { data } = await axiosInstance.patch(
             `${baseURL}/${idProject}/members`,
             { members },
@@ -73,6 +71,14 @@ const ProjectService = {
 
 
     //task
+    getOwnTask:async ():Promise<CommonResponse<OwnTaskList[]>> => {
+        const {data} = await axiosInstance.get(`${baseURL}/own-tasks`);
+        if (data.statusCode !== 202 && data.statusCode !== 200) {
+            throw new Error(data.message);
+        }
+        return data
+
+    },
     addTask:async (idProject:string,payload:CreateTaskProjectRequest):Promise<CommonResponse<string>> => {
         const {data} = await axiosInstance.post(`${baseURL}/${idProject}/task`,payload);
         if(data.statusCode !== 201 && data.statusCode !== 200){
@@ -131,11 +137,7 @@ const ProjectService = {
         }
         return data;
     },
-
-    deleteAttachmentByTaskId: async (
-        taskId: string,
-        ids: {id:string}[],
-    ): Promise<CommonResponse<string>> => {
+    deleteAttachmentByTaskId: async (taskId: string, ids: {id:string}[],): Promise<CommonResponse<string>> => {
         const { data } = await axiosInstance.delete<CommonResponse<string>>(
             `${baseURL}/tasks/${taskId}/attachments`,
             {
@@ -199,36 +201,24 @@ const ProjectService = {
         )
         return data
     },
-    updateSubTask: async (
-        subtaskId: string,
-        payload: UpdateSubTaskRequest
-    ): Promise<CommonResponse<unknown>> => {
+    updateSubTask: async (subtaskId: string, payload: UpdateSubTaskRequest): Promise<CommonResponse<unknown>> => {
         const { data } = await axiosInstance.put<CommonResponse<unknown>>(
             `${baseURL}/subtask/${subtaskId}`,
             payload
         );
         return data;
     },
-
-    deleteSubTask: async (
-        subtaskId: string
-    ): Promise<CommonResponse<null>> => {
+    deleteSubTask: async (subtaskId: string): Promise<CommonResponse<null>> => {
         const { data } = await axiosInstance.delete<CommonResponse<null>>(
             `${baseURL}/subtask/${subtaskId}`
         );
         return data;
     },
-
     moveSubTask: async (subtaskId: string, payload: MoveSubTaskPayload): Promise<CommonResponse<{ id: string; rank?: string }>> => {
         const { data } = await axiosInstance.patch<CommonResponse<{ id: string; rank?: string }>>(`${baseURL}/subtask/${subtaskId}/move`, payload);
         return data;
     },
-
-    syncSubTaskAssignees: async (
-        taskId: string,
-        subTaskId: string,
-        assignees: { nik: string }[],
-    ): Promise<CommonResponse<string>> => {
+    syncSubTaskAssignees: async (taskId: string, subTaskId: string, assignees: { nik: string }[],): Promise<CommonResponse<string>> => {
         const body = {
             assignees: assignees.map(a => ({ nik: a.nik.trim() })),
         };

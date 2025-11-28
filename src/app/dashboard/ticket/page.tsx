@@ -30,7 +30,7 @@ export default function Page() {
         if (!items.length) return undefined;
         // if (isSuper) return "all";
         return user?.nik ?? undefined;
-    }, [items.length, isSuper, user?.nik]);
+    }, [items.length, user?.nik]);
 
     const [activeTab, setActiveTab] = React.useState<string | undefined>(undefined);
 

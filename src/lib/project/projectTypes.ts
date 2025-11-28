@@ -171,5 +171,18 @@ export type ProjectMemberResponse = {
     nama: string;
 };
 
+export type OwnTaskList = {
+    id: string;
+    name: string;
+    status: boolean;
+    dueDate: Date | null;
+    project: {
+        id:string;
+        name: string;
+        color: string | null;
+    };
+};
+
+
 
 

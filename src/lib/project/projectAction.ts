@@ -9,7 +9,7 @@ import {
     CreateProjectPayload, DeleteAttachmentVariables, MemberRequest,
     MoveSectionPayload,
     MoveSubTaskPayload,
-    MoveTaskPayload,
+    MoveTaskPayload, OwnTaskList,
     Project,
     ProjectDetail, ProjectMemberResponse,
     Task,
@@ -40,6 +40,8 @@ const qk = {
     tasks: (id?: string) => ['tasks', id] as const,
     task: (projectId?: string, taskId?: string) => ['task', projectId, taskId] as const,
     taskAttachments: (taskId: string) => ['task-attachments', taskId] as const,
+    ownTasks: () => ['own-tasks'] as const,
+    userInfo:() => ['user-info'] as const,
 }
 // ERROR HANDLING UTILITIES
 interface ApiError {
@@ -259,8 +261,6 @@ const applyOptimistic = (t: Task, input: TaskUpdateInput): Task => {
     }
 }
 
-
-
 // HOOKS
 export function useProjectAction() {
     const handleError = useErrorHandler()
@@ -433,7 +433,6 @@ export function useUpdateProjectAction(idProject?: string) {
     })
 }
 
-
 export function useDeleteProjectAction() {
     const queryClient = useQueryClient()
 
@@ -487,16 +486,25 @@ export const useSyncMemberProjectAction = () => {
             return projectService.syncMemberProject(projectId, members);
         },
         onSuccess: (_res, { projectId }) => {
-            // Invalidasi cache yang relevan setelah sync member sukses
             queryClient.invalidateQueries({ queryKey: ['project', projectId] });
             queryClient.invalidateQueries({ queryKey: ['project-members', projectId] });
-            // kalau kamu punya board/tasks yg ikut terpengaruh:
-            // queryClient.invalidateQueries({ queryKey: ['project', projectId, 'tasks'] });
+            queryClient.invalidateQueries({ queryKey: qk.userInfo(), refetchType: "active" });
         },
     });
 };
 
 //Task
+export const useGetOwnTaskAction = () =>
+    useQuery<CommonResponse<OwnTaskList[]>, Error>({
+        queryKey: qk.ownTasks(),
+        queryFn: () => projectService.getOwnTask(),
+        staleTime: 0,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        refetchInterval: 5000,
+    });
+
+
 type CreateVars = {
     name: string;
     section?: string | null;
@@ -593,6 +601,7 @@ export const useCreateTaskAction = (projectId?: string) => {
 
         onSettled: () => {
             qc.invalidateQueries({ queryKey: key });
+            qc.invalidateQueries({ queryKey: qk.userInfo(), refetchType: "active" });
         },
 
         retry: (failureCount, error) => {
@@ -655,6 +664,7 @@ export const useUpdateTask = (projectId?: string) => {
 
         onSettled: () => {
             qc.invalidateQueries({ queryKey: key })
+            qc.invalidateQueries({ queryKey: qk.ownTasks(), refetchType: "active" });
         },
 
         retry: (failureCount, error) => {
